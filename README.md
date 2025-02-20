@@ -2,7 +2,7 @@
 
 This repo contains some PyTorch code to test the capability of the novel SPARCS paradigm for NAS (*Neural Architecture Search*). The coda has been written with the goal of making the process as simple to understand as possible, and for now no attention has been devolved to making it efficient.
 
-A version of this code is also available in notebook form at [this link](https://colab.research.google.com/drive/1PJeW-4dCKZ9oDNq8t3-yHUsZdGbOJF2y?usp=sharing).
+A lighter version of this code is also available in notebook form at [this link](https://colab.research.google.com/drive/1PJeW-4dCKZ9oDNq8t3-yHUsZdGbOJF2y?usp=sharing).
 
 ## How to create the environment to run the code
 
