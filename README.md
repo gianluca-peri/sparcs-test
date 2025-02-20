@@ -25,3 +25,5 @@ Keep in mind that the link in `pip install torch --index-url https://download.py
 ## How to run the code
 
 You can train the models by running the `train_models.py` script. Since the training can take some time `run_train_in_background.sh` is also available to run the same script in background, logging the output (just remember to `chmod +x` if it doesn't work).
+
+If you wish to change the parameters of the experiment you can do so by simply modifing the `config.yaml` file; currently the parameters are the same as the ones used to get the results presented in the paper.
