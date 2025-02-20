@@ -1,7 +1,10 @@
 name_of_state_dicts_folder: 'State_Dicts'
-name_of_graph_folder: 'Graphs'
+name_of_graphs_folder: 'Graphs'
 seed: 42
 number_of_samples: 100
 epochs: 300
 regularization: True
 reg_strength: 1e-5
+nn_input_dim: 3
+nn_hidden_dim: 300
+nn_output_dim: 1
