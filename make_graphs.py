@@ -85,8 +85,8 @@ for beta in betas:
 
     axs[i].set_title(f'$\\alpha={alpha}$')
 
-    # Plot the training data (one in 100)
-    axs[i].scatter(x[:, 0][::100], x[:, 1][::100], outputs[f'output_alpha{alpha}_beta{beta}'], c='blue')
+    # Plot the training data (one in 10)
+    axs[i].scatter(x[:, 0][::10], x[:, 1][::10], outputs[f'output_alpha{alpha}_beta{beta}'][::10], c='blue')
 
     axs[i].set_xlabel('$x_1$')
     axs[i].set_ylabel('$x_2$')
@@ -128,15 +128,15 @@ for sample in tqdm(range(config['number_of_samples']), desc='Making goodnes of f
       axs[i].set_ylabel('$x_2$')
       axs[i].set_zlabel('$y$')
 
-      # Plot the predictions (only one in 100)
-      axs[i].scatter(x[:, 0][::100], x[:, 1][:100], y_pred, c='red', label='prediction')
+      # Plot the predictions (only one in 10)
+      axs[i].scatter(x[:, 0][::10], x[:, 1][:10], y_pred[::10], c='red', label='prediction')
 
       abs_error = []
       for j in range(len(outputs[f'output_alpha{alpha}_beta{beta}'])):
         abs_error.append(abs(outputs[f'output_alpha{alpha}_beta{beta}'][j] - y_pred[j]))
 
       # Plot the abs error
-      axs[i].scatter(x[:, 0][:100], x[:, 1][:100], abs_error, c='green', label='abs error')
+      axs[i].scatter(x[:, 0][:10], x[:, 1][:10], abs_error[::10], c='green', label='abs error')
 
     # Make global legend
     fig.legend(
