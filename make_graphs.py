@@ -1,7 +1,6 @@
 import os
 import torch
 import numpy as np
-import torch.nn as nn
 from matplotlib import pyplot as plt
 from tqdm import tqdm
 import yaml
@@ -19,10 +18,6 @@ path_to_graph_folder = os.path.join(current_path, config['name_of_graphs_folder'
 # Create the graph folder if not present
 os.makedirs(path_to_graph_folder, exist_ok=True)
 
-# Raise error if the path to the state dict folder is not present
-if not os.path.exists(path_to_state_dict_folder):
-  raise FileNotFoundError(f'The path {path_to_state_dict_folder} does not exist')
-
 # Use graphic card if available
 if torch.cuda.is_available():
   device = torch.device('cuda')
@@ -31,10 +26,7 @@ else:
   device = torch.device('cpu')
   print('Using CPU')
 
-models = {}
-
 # x creation
-
 x = np.random.uniform(-1, 1, (10000, 2))
 
 # Selection of the alpha and beta values
@@ -44,10 +36,6 @@ alphas = []
 for i in range(21):
   value = round(0.05*i, 3)
   alphas.append(value)
-
-print('These are the alpha values:')
-print(f'alpha={alphas}')
-print(f"Total number of alphas: {len(alphas)}\n")
 
 betas = [5, 1000]
 
@@ -77,9 +65,46 @@ for beta in betas:
       )
       models[f'model_alpha{alpha}_beta{beta}_sample{sample}'] = model
 
-# Plot 3D graphs of y and pred y to show the goodness of the fit
 
-for sample in tqdm(range(NUMBER_OF_SAMPLES), desc='Making goodnes of fit plots'):
+#-------------------------------------------------------------------------------
+# PLOT THE TRAINING DATA FOR EVERY ALPHA AND BETA
+
+os.makedirs(os.path.join(path_to_graph_folder, 'Datasets'), exist_ok=True)
+
+for beta in betas:
+
+  # Make multiplot figure
+  num_cols = 7
+  num_rows = int(np.ceil(len(alphas) / num_cols)) # calculate number of rows, rounding up
+  fig, axs = plt.subplots(num_rows, num_cols, subplot_kw={'projection': '3d'}, figsize=(20, 10))
+  axs = axs.flatten()
+
+  fig.suptitle(f'Datasets for $\\beta={beta}$')
+
+  for i, alpha in enumerate(alphas):
+
+    axs[i].set_title(f'$\\alpha={alpha}$')
+
+    # Plot the training data (one in 100)
+    axs[i].scatter(x[:, 0][::100], x[:, 1][::100], outputs[f'output_alpha{alpha}_beta{beta}'], c='blue')
+
+    axs[i].set_xlabel('$x_1$')
+    axs[i].set_ylabel('$x_2$')
+    axs[i].set_zlabel('$y$')
+
+  # Saving
+  plt.savefig(os.path.join(path_to_graph_folder, 'Datasets', f'dataset_beta{beta}.png'))
+  plt.clf()
+
+#-------------------------------------------------------------------------------
+
+
+#-------------------------------------------------------------------------------
+# PLOT 3D GRAPHS OF Y AND PRED_Y TO SHOW GOODNESS OF FIT
+
+os.makedirs(os.path.join(path_to_graph_folder, 'Fits'), exist_ok=True)
+
+for sample in tqdm(range(config['number_of_samples']), desc='Making goodnes of fit plots'):
   for beta in betas:
 
     # Make multiplot figure
@@ -103,15 +128,15 @@ for sample in tqdm(range(NUMBER_OF_SAMPLES), desc='Making goodnes of fit plots')
       axs[i].set_ylabel('$x_2$')
       axs[i].set_zlabel('$y$')
 
-      # Plot the predictions
-      axs[i].scatter(x[:, 0], x[:, 1], y_pred, c='red', label='prediction')
+      # Plot the predictions (only one in 100)
+      axs[i].scatter(x[:, 0][::100], x[:, 1][:100], y_pred, c='red', label='prediction')
 
       abs_error = []
       for j in range(len(outputs[f'output_alpha{alpha}_beta{beta}'])):
         abs_error.append(abs(outputs[f'output_alpha{alpha}_beta{beta}'][j] - y_pred[j]))
 
       # Plot the abs error
-      axs[i].scatter(x[:, 0], x[:, 1], abs_error, c='green', label='abs error')
+      axs[i].scatter(x[:, 0][:100], x[:, 1][:100], abs_error, c='green', label='abs error')
 
     # Make global legend
     fig.legend(
@@ -120,70 +145,15 @@ for sample in tqdm(range(NUMBER_OF_SAMPLES), desc='Making goodnes of fit plots')
         loc='lower center'
         )
 
-    os.makedirs(f'{PATH_TO_SHORTCUT_SAVE_FOLDER}fits', exist_ok=True)
+    # Saving
+    plt.savefig(os.path.join(path_to_graph_folder, 'Fits', f'fit_beta{beta}_sample{sample}.png'))
+    plt.clf()
 
-    plt.savefig(f'{PATH_TO_SHORTCUT_SAVE_FOLDER}fits/fit_beta{beta}_sample{sample}.png')
+#-------------------------------------------------------------------------------
 
-# Make mean error graph
 
-for beta in tqdm(betas, desc='Making mean error plots'):
-
-  mean_error = []
-  std_mean_error = []
-
-  fig = plt.figure()
-  ax = fig.add_subplot()
-  ax.set_title('$\\alpha$ vs. mean error, $\\beta={beta}$')
-  ax.set_xlabel('$\\alpha$')
-  ax.set_ylabel('mean error')
-
-  ax.axhline(y=0, color='grey', linestyle='--')
-
-  for alpha in alphas:
-
-    errors_mean_on_samples = []
-
-    for sample in range(NUMBER_OF_SAMPLES):
-      model = models[f'model_alpha{alpha}_beta{beta}_sample{sample}']
-
-      # Get the predictions
-      model.eval()
-      y_pred = model(torch.from_numpy(x).float()).detach().numpy()
-
-      abs_error = []
-
-      for j in range(len(outputs[f'output_alpha{alpha}_beta{beta}'])):
-        abs_error.append(abs(outputs[f'output_alpha{alpha}_beta{beta}'][j] - y_pred[j]))
-
-      errors_mean_on_samples.append(np.mean(abs_error))
-
-    mean_error.append(np.mean(errors_mean_on_samples))
-    std_mean_error.append(np.std(errors_mean_on_samples)/np.sqrt(NUMBER_OF_SAMPLES))
-
-  # Normalization
-  max_value = max(mean_error)
-
-  for elem in mean_error:
-    elem = elem/max_value
-
-  for elem in std_mean_error:
-    elem = elem/max_value
-
-  # Plotting
-  ax.errorbar(alphas,
-              mean_error,
-              yerr=std_mean_error,
-              label=f'$\\beta={beta}$',
-              marker='o',
-              markersize=5,
-              capsize=5,
-              capthick=1)
-
-  plt.legend()
-
-  plt.savefig(f'{PATH_TO_SHORTCUT_SAVE_FOLDER}mean_error_beta{beta}.png')
-
-# Make graph of mean of L_1 and L_2
+#-------------------------------------------------------------------------------
+# MAKE GRAPH OF MEAN OF L_1 AND L_2
 
 mean_l1_l2 = {}
 mean_std_l1_l2 = {}
@@ -203,13 +173,13 @@ for beta in tqdm(betas, desc='Making mean of L1 and L2 plots'):
   for alpha in alphas:
 
     means = []
-    for sample in range(NUMBER_OF_SAMPLES):
+    for sample in range(config['number_of_samples']):
       l1_diag = models[f'model_alpha{alpha}_beta{beta}_sample{sample}'].l1_diag
       l2_diag = models[f'model_alpha{alpha}_beta{beta}_sample{sample}'].l2_diag
       means.append(torch.mean(torch.abs(torch.cat((l1_diag, l2_diag)))).detach().numpy())
 
     mean_l1_l2[alpha] = np.mean(means)
-    mean_std_l1_l2[alpha] = np.std(means)/np.sqrt(NUMBER_OF_SAMPLES)
+    mean_std_l1_l2[alpha] = np.std(means)/np.sqrt(config['number_of_samples'])
 
   # Normalization
   max_value = max(mean_l1_l2.values())
@@ -233,9 +203,14 @@ for beta in tqdm(betas, desc='Making mean of L1 and L2 plots'):
 
 ax.legend()
 
-plt.savefig(f'{PATH_TO_SHORTCUT_SAVE_FOLDER}mean_l1_l2.png')
+plt.savefig(os.path.join(path_to_graph_folder, 'mean_of_concatenation_of_eigenvalues.png'))
+plt.clf()
 
-# Defining function to calculate W_21, W_32, and W_31 from varphi1, varphi2, l1_diag, l2_diag, l3_diag
+#-------------------------------------------------------------------------------
+
+
+#-------------------------------------------------------------------------------
+# PLOTTING THE NORM OF N
 
 def calculate_Ws(varphi1, varphi2, l1_diag, l2_diag, l3_diag):
 
@@ -270,7 +245,7 @@ def calculate_N(W_21, W_32):
 
 Ns = {}
 
-for sample in tqdm(range(NUMBER_OF_SAMPLES), desc='Calculating Ns'):
+for sample in tqdm(range(config['number_of_samples']), desc='Calculating Ns'):
   for beta in betas:
     for alpha in alphas:
 
@@ -301,11 +276,11 @@ for beta in tqdm(betas, desc='Making norm of N plots'):
   for alpha in alphas:
 
     norms_samples = []
-    for sample in range(NUMBER_OF_SAMPLES):
+    for sample in range(config['number_of_samples']):
       norms_samples.append(np.linalg.norm(Ns[f'N_alpha{alpha}_beta{beta}_sample{sample}']))
 
     mean_of_norm_of_N.append(np.mean(norms_samples))
-    std_mean.append(np.std(norms_samples)/np.sqrt(NUMBER_OF_SAMPLES))
+    std_mean.append(np.std(norms_samples)/np.sqrt(config['number_of_samples']))
 
     # Normalization
 
@@ -329,8 +304,13 @@ for beta in tqdm(betas, desc='Making norm of N plots'):
 
 ax.legend()
 
-plt.savefig(f'{PATH_TO_SHORTCUT_SAVE_FOLDER}norm_of_N.png')
+plt.savefig(os.path.join(path_to_graph_folder, 'norm_of_N.png'))
+plt.clf()
 
+#-------------------------------------------------------------------------------
+
+
+#-------------------------------------------------------------------------------
 # PLOTTING THE NEURAL GRAPH IN 3D
 
 # Definition of the helper functions
@@ -452,7 +432,9 @@ def plot_connections(ax, N, W_31, positions_dict):
 
 TRESHOLD = 1e-2
 
-for sample in tqdm(range(NUMBER_OF_SAMPLES), desc='Making architectures plots'):
+os.makedirs(os.path.join(path_to_graph_folder, 'Architectures'), exist_ok=True)
+
+for sample in tqdm(range(config['number_of_samples']), desc='Making architectures plots'):
   for beta in betas:
 
     # Make multiplot figure
@@ -493,6 +475,6 @@ for sample in tqdm(range(NUMBER_OF_SAMPLES), desc='Making architectures plots'):
 
       plot_connections(axs[j], N_quantized, W_31_quantized, positions_dict)
 
-    os.makedirs(f'{PATH_TO_SHORTCUT_SAVE_FOLDER}architectures', exist_ok=True)
 
-    plt.savefig(f'{PATH_TO_SHORTCUT_SAVE_FOLDER}architectures/architectures_beta{beta}_sample{sample}.png')
+    plt.savefig(os.path.join(path_to_graph_folder, 'Architectures', f'architectures_beta{beta}_sample{sample}.png'))
+    plt.clf()
