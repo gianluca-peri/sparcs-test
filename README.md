@@ -1,9 +1,8 @@
 # SPARCS Test
 
-This repo contains some PyTorch code to test the capability of the novel SPARCS paradigm for NAS (*Neural Architecture Search*).
+This repo contains some PyTorch code to test the capability of the novel SPARCS paradigm for NAS (*Neural Architecture Search*). The coda has been written with the goal of making the process as simple to understand as possible, and for now no attention has been devolved to making it efficient.
 
-A Colab notebook is also available at [this link](https://colab.research.google.com/drive/1PJeW-4dCKZ9oDNq8t3-yHUsZdGbOJF2y?usp=sharing).
-Keep in mind that the code may run slow with the limited resources of the free Colab plan.
+A version of this code is also available in notebook form at [this link](https://colab.research.google.com/drive/1PJeW-4dCKZ9oDNq8t3-yHUsZdGbOJF2y?usp=sharing).
 
 ## How to create the environment to run the code
 
@@ -18,6 +17,11 @@ conda activate sparcs
 pip install numpy
 pip install torch --index-url https://download.pytorch.org/whl/cu124
 pip install matplotlib
+pip install pyaml
 ```
 
 Keep in mind that the link in `pip install torch --index-url https://download.pytorch.org/whl/cu124` could be dependent on your card, check the [PyTorch site](https://pytorch.org/) for more informations.
+
+## How to run the code
+
+You can train the models by running the `train_models.py` script. Since the training can take some time `run_train_in_background.sh` is also available to run the same script in background, logging the output (just remember to `chmod +x` if it doesn't work).

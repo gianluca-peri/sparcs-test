@@ -1,35 +1,28 @@
-# Option to save data on Google Drive from Google Colab, if it gives problems in your setup simply turn it to False
-
-SAVING = True
-SHOWING = False
-
-# Remember to add the final slash for the folder!
-PATH_TO_SAVE_FOLDER = 'Results/'
-
 import os
-from matplotlib import pyplot as plt
-
-# Set seeds for reproducibility
-
-import numpy as np
 import torch
-from torch import nn
-from torch.utils.data import TensorDataset, DataLoader
-from torch.optim import Adam
+import numpy as np
+import torch.nn as nn
+from matplotlib import pyplot as plt
+from tqdm import tqdm
 
-np.random.seed(42)
-torch.manual_seed(42)
+# Import yaml config
 
-print("Starting the script...")
+with open('config.yaml') as file:
+  config = yaml.full_load(file)
 
-"""We start by defining the simplest kind of generalized spectral network: $\Phi _2$ (only one hidden layer). There are 3 things to keep in mind:
+current_path = os.getcwd()
+path_to_state_dict_folder= os.path.join(current_path, config['name_of_state_dicts_folder'])
 
-- The network is meant to do regression (there is only one output neuron)
-- The network is initialized to have only the linear skip connections active at first
-- We use one bias neuron in the input layer
-"""
 
-# Definition of the spectral network (for regression)
+
+NUMBER_OF_SAMPLES = 100
+
+# Create the save folder if not present
+
+os.makedirs(PATH_TO_SHORTCUT_SAVE_FOLDER, exist_ok=True)
+
+# Definition of the network
+
 class Phi2_Network(nn.Module):
   """
   This network expects a batch of data with rows representing single inputs
@@ -77,14 +70,7 @@ class Phi2_Network(nn.Module):
 
     return y.t()
 
-"""Next we define the target function:
-
-$$y(x_1,x_2) = \frac{1}{4}\left[1-\tanh\left(\beta\left(\alpha - \frac{1}{2}\right)\right)\right]\sum_i x_i + \frac{1}{4}\left[1+\tanh\left(\beta\left(\alpha - \frac{1}{2}\right)\right)\right]\sum_i x_i^2.$$
-
-We have choosen this target function because it allows to vary the degree of non linearity with $\alpha, \beta$.
-
-
-"""
+models = {}
 
 # Definition of the target function
 
@@ -95,18 +81,11 @@ def target_function(alpha, beta, x):
 
     return linear_term + non_linear_term
 
-"""Next we create the bidimensional set of features."""
-
-# 2D train input data generation ()
+# x creation
 
 x = np.random.uniform(-1, 1, (10000, 2))
 
-print(f"The shape of the input data is {x.shape}\n")
-
-"""From the set of features $x$ we generate multiple datasets for supervised learning, each one with a different set of parameters $\alpha, \beta$."""
-
-from math import trunc
-# creation of multiple outputs for varing alpha and beta
+# Selection of the alpha and beta values
 
 alphas = []
 
@@ -120,168 +99,34 @@ print(f"Total number of alphas: {len(alphas)}\n")
 
 betas = [5, 1000]
 
+# Creation of the outputs
+
 outputs = {}
 
 for alpha in alphas:
   for beta in betas:
     outputs[f"output_alpha{alpha}_beta{beta}"] = target_function(alpha, beta, x)
 
-print('Output:')
-print("Let's take alpha=0.5, beta=1000 as an example:")
-print(f"The shape of the output data is {outputs[f'output_alpha0.5_beta1000'].shape}\n")
+# Loading the models
 
-# Plot the training data for every alpha and beta
-
-# Make one figure for each beta, and for each figure make one separate subplot for each alpha, graph in 3d
-
-for beta in betas:
-
-  # Make multiplot figure
-  num_cols = 7
-  num_rows = int(np.ceil(len(alphas) / num_cols)) # calculate number of rows, rounding up
-  fig, axs = plt.subplots(num_rows, num_cols, subplot_kw={'projection': '3d'}, figsize=(20, 10))
-  axs = axs.flatten()
-
-  fig.suptitle(f'Datasets for $\\beta={beta}$')
-
-  for i, alpha in enumerate(alphas):
-
-    axs[i].set_title(f'$\\alpha={alpha}$')
-
-    axs[i].scatter(x[:, 0], x[:, 1], outputs[f'output_alpha{alpha}_beta{beta}'], c='blue')
-
-    axs[i].set_xlabel('$x_1$')
-    axs[i].set_ylabel('$x_2$')
-    axs[i].set_zlabel('$y$')
-
-  if SAVING:
-    print(f'Saving beta={beta}...')
-
-    # Make the folder if not present
-    os.makedirs(f'{PATH_TO_SAVE_FOLDER}datasets', exist_ok=True)
-
-    # Cancel previous figures
-    for item in os.listdir(f'{PATH_TO_SAVE_FOLDER}datasets'):
-      if f'datasets_beta{beta}.png' == item:
-        os.remove(os.path.join(f'{PATH_TO_SAVE_FOLDER}datasets', item))
-
-    # Saving
-    plt.savefig(f'{PATH_TO_SAVE_FOLDER}datasets/datasets_beta{beta}.png')
-
-  if SHOWING:
-    print(f'Showing beta={beta}...')
-    plt.show()
-
-# Create torch datasets
-
-x_torch = torch.from_numpy(x).float()
-
-datasets = {}
-
-for alpha in alphas:
-  for beta in betas:
-
-    y_torch = torch.from_numpy(outputs[f'output_alpha{alpha}_beta{beta}']).float().unsqueeze(1)
-
-    datasets[f'dataset_alpha{alpha}_beta{beta}'] = TensorDataset(x_torch, y_torch)
-
-# Create dataloaders
-
-dataloaders = {}
-
-for alpha in alphas:
-  for beta in betas:
-
-    dataloader = DataLoader(datasets[f'dataset_alpha{alpha}_beta{beta}'], batch_size=100, shuffle=True)
-
-    dataloaders[f'dataloader_alpha{alpha}_beta{beta}'] = dataloader
-
-# We have to specify the number of samples for the experiment
-
-NUMBER_OF_SAMPLES = 100
-
-"""Training with weak regularization."""
-
-# TRAINING (skippable if you have models saved)
-
-# PAPER PARAMETERS (LONG TRAINING TIME):
-# EPOCHS = 300
-# REGULARIZATION = True
-# REG_STRENGHT = 1e-5
-# NUMBER_OF_SAMPLES = 100
-
-EPOCHS = 300
-REGULARIZATION = True
-REG_STRENGHT = 1e-5
-
-VERBOSE = False
-
-# Define loss function
-
-criterion = nn.MSELoss()
-
-# Train the models
-
-models = {}
-
-for sample in range(NUMBER_OF_SAMPLES):
-  for beta in betas:
-    for alpha in alphas:
-
-      print(f"Training on beta={beta}, alpha={alpha}, sample {sample}")
-
-      model = Phi2_Network()
-      optimizer = Adam(model.parameters(), lr=0.001)
-
-      model.train()
-
-      # Arbitrary high value for initial past loss
-      past_global_loss = 1e6
-
-      for epoch in range(EPOCHS):
-        for inputs, targets in dataloaders[f'dataloader_alpha{alpha}_beta{beta}']:
-
-          optimizer.zero_grad()
-          pred = model(inputs)
-          loss = criterion(pred, targets)
-
-          if REGULARIZATION:
-            for name, param in model.named_parameters():
-              if 'l1' in name or 'l2' in name:
-                loss += REG_STRENGHT * torch.norm(param, p=2)
-
-          loss.backward()
-          optimizer.step()
-
-        if VERBOSE:
-          print(f"Epoch: {epoch}, Loss: {loss.item()}")
-
-      models[f'model_alpha{alpha}_beta{beta}_sample{sample}'] = model
-
-# Save the models on Drive for future use (no need to train every time)
-
-if SAVING:
-  os.makedirs(f'{PATH_TO_SAVE_FOLDER}models', exist_ok=True)
-
-  for item in os.listdir(f'{PATH_TO_SAVE_FOLDER}models'):
-    os.remove(os.path.join(f'{PATH_TO_SAVE_FOLDER}models', item))
-
-  for key, value in models.items():
-    torch.save(value.state_dict(), f'{PATH_TO_SAVE_FOLDER}models/{key}.pt')
-
-# Import models from save (run this cell to skip the training and load from save)
 models = {}
 
 for beta in betas:
   for alpha in alphas:
     for sample in range(NUMBER_OF_SAMPLES):
       model = Phi2_Network()
-      model.load_state_dict(torch.load(f'{PATH_TO_SAVE_FOLDER}models/model_alpha{alpha}_beta{beta}_sample{sample}.pt'))
+      model.load_state_dict(
+        torch.load(
+          os.path.join(
+            path_to_state_dict_folder,
+            f'model_alpha{alpha}_beta{beta}_sample{sample}.pt'
+          )
+        )
       models[f'model_alpha{alpha}_beta{beta}_sample{sample}'] = model
 
 # Plot 3D graphs of y and pred y to show the goodness of the fit
 
-for sample in range(NUMBER_OF_SAMPLES):
+for sample in tqdm(range(NUMBER_OF_SAMPLES), desc='Making goodnes of fit plots'):
   for beta in betas:
 
     # Make multiplot figure
@@ -322,23 +167,13 @@ for sample in range(NUMBER_OF_SAMPLES):
         loc='lower center'
         )
 
-    if SAVING:
-      os.makedirs(f'{PATH_TO_SAVE_FOLDER}fits', exist_ok=True)
+    os.makedirs(f'{PATH_TO_SHORTCUT_SAVE_FOLDER}fits', exist_ok=True)
 
-      for item in os.listdir(f'{PATH_TO_SAVE_FOLDER}fits'):
-        if f'fit_beta{beta}_sample{sample}.png' == item:
-          os.remove(os.path.join(f'{PATH_TO_SAVE_FOLDER}fits', item))
-
-      print(f'Saving beta={beta}, sample {sample}...')
-
-      plt.savefig(f'{PATH_TO_SAVE_FOLDER}fits/fit_beta{beta}_sample{sample}.png')
-
-    print(f'Showing beta={beta}, sample {sample}...')
-    plt.show()
+    plt.savefig(f'{PATH_TO_SHORTCUT_SAVE_FOLDER}fits/fit_beta{beta}_sample{sample}.png')
 
 # Make mean error graph
 
-for beta in betas:
+for beta in tqdm(betas, desc='Making mean error plots'):
 
   mean_error = []
   std_mean_error = []
@@ -393,17 +228,7 @@ for beta in betas:
 
   plt.legend()
 
-  if SAVING:
-
-    if os.path.exists(f'{PATH_TO_SAVE_FOLDER}mean_error_beta{beta}.png'):
-      os.remove(f'{PATH_TO_SAVE_FOLDER}mean_error_beta{beta}.png')
-
-    plt.savefig(f'{PATH_TO_SAVE_FOLDER}mean_error_beta{beta}.png')
-
-  if SHOWING:
-    plt.show()
-
-"""The following code plots the mean value of the two diagonals of $\mathcal{L}_1$ and $\mathcal{L}_2$. These two are initialized at zero, and their activation during training is an indirect measure of the activation of the hidden layer (thanks to the structure of the spectral parametrization)."""
+  plt.savefig(f'{PATH_TO_SHORTCUT_SAVE_FOLDER}mean_error_beta{beta}.png')
 
 # Make graph of mean of L_1 and L_2
 
@@ -412,13 +237,13 @@ mean_std_l1_l2 = {}
 
 fig = plt.figure()
 ax = fig.add_subplot()
-ax.set_title('$\\alpha$ vs. mean of concatenation of $\mathcal{L}_1$ and $\mathcal{L}_2$ diagonals')
+ax.set_title('$\\alpha$ vs. mean of concatenation of eigenvalues')
 ax.set_xlabel('$\\alpha$')
 ax.set_ylabel('mean of concatenation')
 
 ax.axhline(y=0, color='grey', linestyle='--')
 
-for beta in betas:
+for beta in tqdm(betas, desc='Making mean of L1 and L2 plots'):
 
   color = np.random.rand(3,)
 
@@ -455,14 +280,7 @@ for beta in betas:
 
 ax.legend()
 
-if SAVING:
-
-  if os.path.exists(f'{PATH_TO_SAVE_FOLDER}mean_l1_l2.png'):
-    os.remove(f'{PATH_TO_SAVE_FOLDER}mean_l1_l2.png')
-
-  plt.savefig(f'{PATH_TO_SAVE_FOLDER}mean_l1_l2.png')
-if SHOWING:
-  plt.show()
+plt.savefig(f'{PATH_TO_SHORTCUT_SAVE_FOLDER}mean_l1_l2.png')
 
 # Defining function to calculate W_21, W_32, and W_31 from varphi1, varphi2, l1_diag, l2_diag, l3_diag
 
@@ -484,27 +302,6 @@ def calculate_Ws(varphi1, varphi2, l1_diag, l2_diag, l3_diag):
 
   return {'W_21': W_21, 'W_32': W_32, 'W_31': W_31}
 
-# Taking model alpha=0.5, beta=1000, sample 0 as an example
-
-model = models[f'model_alpha0.5_beta1000_sample0']
-
-Ws = calculate_Ws(model.varphi1, model.varphi2, model.l1_diag, model.l2_diag, model.l3_diag)
-
-print(f'Example: model with alpha=0.5, beta=1000, sample 0\n')
-print(f"Shape of W_21: {Ws['W_21'].shape}")
-print(f"Shape of W_32: {Ws['W_32'].shape}")
-print(f"Shape of W_31: {Ws['W_31'].shape}\n")
-print(f"W_21={Ws['W_21']}\n")
-print(f"W_32={Ws['W_32']}\n")
-print(f"W_31={Ws['W_31']}")
-
-"""In the next cell we calculate $N$, a 3D tensor that encodes the strenght of each non linear channel. $N$ is simply defined as:
-
-$$N_{ijk} = [W_{32}]_{ij} \cdot [W_{21}]_{jk}.$$
-
-It follows that the norm of $N$ directly measures the degree of activation of the non linear connections, and so the activation of the hidden layer.
-"""
-
 # Defining function to calculate N
 
 def calculate_N(W_21, W_32):
@@ -520,7 +317,7 @@ def calculate_N(W_21, W_32):
 
 Ns = {}
 
-for sample in range(NUMBER_OF_SAMPLES):
+for sample in tqdm(range(NUMBER_OF_SAMPLES), desc='Calculating Ns'):
   for beta in betas:
     for alpha in alphas:
 
@@ -532,8 +329,6 @@ for sample in range(NUMBER_OF_SAMPLES):
 
       Ns[f'N_alpha{alpha}_beta{beta}_sample{sample}'] = N
 
-print(f"Shape of N: {Ns['N_alpha0.5_beta1000_sample0'].shape}\n")
-
 fig = plt.figure()
 ax = fig.add_subplot()
 
@@ -543,7 +338,7 @@ ax.set_ylabel('$||N||$')
 
 ax.axhline(y=0, color='grey', linestyle='--')
 
-for beta in betas:
+for beta in tqdm(betas, desc='Making norm of N plots'):
 
   # One element for each alpha
   # The mean is made on the samples
@@ -581,17 +376,7 @@ for beta in betas:
 
 ax.legend()
 
-if SAVING:
-
-  if os.path.exists(f'{PATH_TO_SAVE_FOLDER}norm_of_N.png'):
-    os.remove(f'{PATH_TO_SAVE_FOLDER}norm_of_N.png')
-
-  plt.savefig(f'{PATH_TO_SAVE_FOLDER}norm_of_N.png')
-
-if SHOWING:
-  plt.show()
-
-"""This last cell makes a graph of the network architecture, ignoring the connections with strengh under a certain low treshold."""
+plt.savefig(f'{PATH_TO_SHORTCUT_SAVE_FOLDER}norm_of_N.png')
 
 # PLOTTING THE NEURAL GRAPH IN 3D
 
@@ -714,7 +499,7 @@ def plot_connections(ax, N, W_31, positions_dict):
 
 TRESHOLD = 1e-2
 
-for sample in range(NUMBER_OF_SAMPLES):
+for sample in tqdm(range(NUMBER_OF_SAMPLES), desc='Making architectures plots'):
   for beta in betas:
 
     # Make multiplot figure
@@ -755,17 +540,6 @@ for sample in range(NUMBER_OF_SAMPLES):
 
       plot_connections(axs[j], N_quantized, W_31_quantized, positions_dict)
 
-    if SAVING:
-      print(f'Saving beta={beta}, sample {sample}...')
-      os.makedirs(f'{PATH_TO_SAVE_FOLDER}architectures', exist_ok=True)
+    os.makedirs(f'{PATH_TO_SHORTCUT_SAVE_FOLDER}architectures', exist_ok=True)
 
-      for item in os.listdir(f'{PATH_TO_SAVE_FOLDER}architectures'):
-        if f'architectures_beta{beta}_sample{sample}.png' == item:
-          os.remove(os.path.join(f'{PATH_TO_SAVE_FOLDER}architectures', item))
-
-      plt.savefig(f'{PATH_TO_SAVE_FOLDER}architectures/architectures_beta{beta}_sample{sample}.png')
-
-    print(f'Showing beta={beta}, sample {sample}...')
-
-    if SHOWING:
-      plt.show()
+    plt.savefig(f'{PATH_TO_SHORTCUT_SAVE_FOLDER}architectures/architectures_beta{beta}_sample{sample}.png')

@@ -1,0 +1,7 @@
+name_of_state_dicts_folder: 'State_Dicts'
+name_of_graph_folder: 'Graphs'
+seed: 42
+number_of_samples: 100
+epochs: 300
+regularization: True
+reg_strength: 1e-5
