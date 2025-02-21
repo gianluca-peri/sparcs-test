@@ -1,3 +1,8 @@
+'''
+This code should be runned after train_models.py.
+It will perform an analysis of the trained models, and generate graphs.
+'''
+
 import os
 import torch
 import numpy as np

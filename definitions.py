@@ -1,3 +1,7 @@
+'''
+This file contains the definition of the spectral network and the target function.
+'''
+
 import torch
 import torch.nn as nn
 import numpy as np

@@ -1,3 +1,8 @@
+'''
+This code trains the models, it is essentially the main script of the project.
+The models are saved in the format 'model_alpha{alpha}_beta{beta}_sample{sample}.pt'.
+'''
+
 import os
 import torch
 import numpy as np
