@@ -76,7 +76,7 @@ for beta in betas:
 
 os.makedirs(os.path.join(path_to_graph_folder, 'Datasets'), exist_ok=True)
 
-for beta in betas:
+for beta in tqdm(betas, desc='Making datasets plots'):
 
   # Make multiplot figure
   num_cols = 7
@@ -91,7 +91,7 @@ for beta in betas:
     axs[i].set_title(f'$\\alpha={alpha}$')
 
     # Plot the training data (one in 10)
-    axs[i].scatter(x[:, 0][::10], x[:, 1][::10], outputs[f'output_alpha{alpha}_beta{beta}'][::10], c='blue')
+    axs[i].scatter(x[:, 0], x[:, 1], outputs[f'output_alpha{alpha}_beta{beta}'], c='blue')
 
     axs[i].set_xlabel('$x_1$')
     axs[i].set_ylabel('$x_2$')
@@ -126,7 +126,7 @@ for sample in tqdm(range(config['number_of_samples']), desc='Making goodnes of f
 
       # Get the predictions
       model.eval()
-      y_pred = model(torch.from_numpy(x).float()).detach().numpy()
+      y_pred = model(torch.from_numpy(x).float()).detach().squeeze().numpy()
 
       axs[i].set_title(f'$\\alpha={alpha}$')
       axs[i].set_xlabel('$x_1$')
@@ -134,14 +134,12 @@ for sample in tqdm(range(config['number_of_samples']), desc='Making goodnes of f
       axs[i].set_zlabel('$y$')
 
       # Plot the predictions (only one in 10)
-      axs[i].scatter(x[:, 0][::10], x[:, 1][:10], y_pred[::10], c='red', label='prediction')
+      axs[i].scatter(x[:, 0], x[:, 1], y_pred, c='red', label='prediction')
 
-      abs_error = []
-      for j in range(len(outputs[f'output_alpha{alpha}_beta{beta}'])):
-        abs_error.append(abs(outputs[f'output_alpha{alpha}_beta{beta}'][j] - y_pred[j]))
+      abs_error = np.abs(np.array(outputs[f'output_alpha{alpha}_beta{beta}']) - y_pred)
 
       # Plot the abs error
-      axs[i].scatter(x[:, 0][:10], x[:, 1][:10], abs_error[::10], c='green', label='abs error')
+      axs[i].scatter(x[:, 0], x[:, 1], abs_error, c='green', label='abs error')
 
     # Make global legend
     fig.legend(
