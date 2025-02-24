@@ -38,21 +38,8 @@ print(f"The shape of the input data is {x.shape}\n")
 
 # Creation of multiple outputs for varing alpha and beta
 
-alphas = []
-
-for i in range(21):
-  value = round(0.05*i, 3)
-  alphas.append(value)
-
-print('These are the alpha values:')
-print(f'alpha={alphas}')
-print(f"Total number of alphas: {len(alphas)}\n")
-
-betas = [5, 1000]
-
-print('These are the beta values:')
-print(f'beta={betas}')
-print(f"Total number of betas: {len(betas)}\n")
+alphas = config['alphas']
+betas = config['betas']
 
 outputs = {}
 

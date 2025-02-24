@@ -34,15 +34,10 @@ else:
 # x creation
 x = np.random.uniform(-1, 1, (10000, 2))
 
-# Selection of the alpha and beta values
+# Get the alphas and betas
 
-alphas = []
-
-for i in range(21):
-  value = round(0.05*i, 3)
-  alphas.append(value)
-
-betas = [5, 1000]
+alphas = config['alphas']
+betas = config['betas']
 
 # Creation of the outputs
 
