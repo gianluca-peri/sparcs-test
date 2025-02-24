@@ -20,6 +20,7 @@ pip install numpy
 pip install torch --index-url https://download.pytorch.org/whl/cu124
 pip install matplotlib
 pip install pyaml
+pip install tqdm
 ```
 
 Keep in mind that the link in `pip install torch --index-url https://download.pytorch.org/whl/cu124` could be dependent on your card, check the [PyTorch site](https://pytorch.org/) for more informations.
