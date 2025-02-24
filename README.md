@@ -1,14 +1,14 @@
 # SPARCS Test
 
-This repo contains some PyTorch code to test the capability of the novel SPARCS paradigm for NAS (*Neural Architecture Search*). The coda has been written with the goal of making the process as simple to understand as possible, and for now no attention has been devolved to making it efficient.
+This repository contains some PyTorch code to test the capabilities of the novel SPARCS paradigm for NAS (*Neural Architecture Search*). The code has been written with simplicity in mind, prioritizing clarity over efficiency.
 
-A **lighter** version of this code is also available in notebook form at [this link](https://colab.research.google.com/drive/1PJeW-4dCKZ9oDNq8t3-yHUsZdGbOJF2y?usp=sharing).
+A **lighter** version of this code is available in notebook form at [this link](https://colab.research.google.com/drive/1PJeW-4dCKZ9oDNq8t3-yHUsZdGbOJF2y?usp=sharing).
 
-The linked notebook is light enough to be runnable with the limited resources of Colab's free tier, but to achive this we scaled down the experiment's parameters considerably, and so the results achievable with the notebook will not have the same quality as the one obtainable with a local installation of this repo's code.
+The linked notebook is optimized to run on Colab's free tier by scaling down the experiment's parameters considerably. As a result, the outcomes achieved with the notebook will not match the quality of those obtained using a local installation of this repository's code.
 
 ## How to create the environment to run the code
 
-It is assumed installation on linux, as well as availability of an Nvidia card.
+The installation instructions assume a Linux system with an Nvidia GPU.
 First of all you should run `nvidia-smi` to check the specs of your card.
 
 In the following we also assume `conda` usage; it is advisable to run these shell instructions one by one, after having installed `miniconda`
