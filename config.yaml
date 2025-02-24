@@ -11,3 +11,6 @@ nn_input_dim: 3
 nn_hidden_dim: 300
 nn_output_dim: 1
 use_gpu: True
+plot_datasets: True
+plot_fits: True
+plot_architectures: True

@@ -12,18 +12,20 @@ import yaml
 
 from definitions import Phi2_Network, target_function
 
+# First of all we set a readable font size for the article
+plt.rcParams.update({'font.size': 16})
+
 # Import yaml config
 with open('config.yaml') as file:
   config = yaml.full_load(file)
 
+# Get path to get models and save graphs
 current_path = os.getcwd()
 path_to_state_dict_folder= os.path.join(current_path, config['name_of_state_dicts_folder'])
 path_to_graph_folder = os.path.join(current_path, config['name_of_graphs_folder'])
-
-# Create the graph folder if not present
 os.makedirs(path_to_graph_folder, exist_ok=True)
 
-# Use graphic card if available
+# Use graphic card is selected and available
 if torch.cuda.is_available() and config['use_gpu']:
   device = torch.device('cuda')
   print('Using GPU')
@@ -69,32 +71,34 @@ for beta in betas:
 #-------------------------------------------------------------------------------
 # PLOT THE TRAINING DATA FOR EVERY ALPHA AND BETA
 
-os.makedirs(os.path.join(path_to_graph_folder, 'Datasets'), exist_ok=True)
+if config['plot_datasets']:
 
-for beta in tqdm(betas, desc='Making datasets plots'):
+  os.makedirs(os.path.join(path_to_graph_folder, 'Datasets'), exist_ok=True)
 
-  # Make multiplot figure
-  num_cols = 7
-  num_rows = int(np.ceil(len(alphas) / num_cols)) # calculate number of rows, rounding up
-  fig, axs = plt.subplots(num_rows, num_cols, subplot_kw={'projection': '3d'}, figsize=(20, 10))
-  axs = axs.flatten()
+  for beta in tqdm(betas, desc='Making datasets plots'):
 
-  fig.suptitle(f'Datasets for $\\beta={beta}$')
+    # Make multiplot figure
+    num_cols = 7
+    num_rows = int(np.ceil(len(alphas) / num_cols)) # calculate number of rows, rounding up
+    fig, axs = plt.subplots(num_rows, num_cols, subplot_kw={'projection': '3d'}, figsize=(20, 10))
+    axs = axs.flatten()
 
-  for i, alpha in enumerate(alphas):
+    fig.suptitle(f'Datasets for $\\beta={beta}$')
 
-    axs[i].set_title(f'$\\alpha={alpha}$')
+    for i, alpha in enumerate(alphas):
 
-    # Plot the training data (one in 10)
-    axs[i].scatter(x[:, 0], x[:, 1], outputs[f'output_alpha{alpha}_beta{beta}'], c='blue')
+      axs[i].set_title(f'$\\alpha={alpha}$')
 
-    axs[i].set_xlabel('$x_1$')
-    axs[i].set_ylabel('$x_2$')
-    axs[i].set_zlabel('$y$')
+      # Plot the training data (one in 10)
+      axs[i].scatter(x[:, 0], x[:, 1], outputs[f'output_alpha{alpha}_beta{beta}'], c='blue')
 
-  # Saving
-  plt.savefig(os.path.join(path_to_graph_folder, 'Datasets', f'dataset_beta{beta}.png'))
-  plt.close()
+      axs[i].set_xlabel('$x_1$')
+      axs[i].set_ylabel('$x_2$')
+      axs[i].set_zlabel('$y$')
+
+    # Saving
+    plt.savefig(os.path.join(path_to_graph_folder, 'Datasets', f'dataset_beta{beta}.png'))
+    plt.close()
 
 #-------------------------------------------------------------------------------
 
@@ -102,50 +106,52 @@ for beta in tqdm(betas, desc='Making datasets plots'):
 #-------------------------------------------------------------------------------
 # PLOT 3D GRAPHS OF Y AND PRED_Y TO SHOW GOODNESS OF FIT
 
-os.makedirs(os.path.join(path_to_graph_folder, 'Fits'), exist_ok=True)
+if config['plot_fits']:
 
-for sample in tqdm(range(config['number_of_samples']), desc='Making goodnes of fit plots'):
-  for beta in betas:
+  os.makedirs(os.path.join(path_to_graph_folder, 'Fits'), exist_ok=True)
 
-    # Make multiplot figure
-    num_cols = 7
-    num_rows = int(np.ceil(len(alphas) / num_cols))
-    fig, axs = plt.subplots(num_rows, num_cols, subplot_kw={'projection': '3d'}, figsize=(20, 10))
-    axs = axs.flatten()
+  for sample in tqdm(range(config['number_of_samples']), desc='Making goodnes of fit plots'):
+    for beta in betas:
 
-    fig.suptitle(f'Results for $\\beta={beta}$, sample {sample}')
+      # Make multiplot figure
+      num_cols = 7
+      num_rows = int(np.ceil(len(alphas) / num_cols))
+      fig, axs = plt.subplots(num_rows, num_cols, subplot_kw={'projection': '3d'}, figsize=(20, 10))
+      axs = axs.flatten()
 
-    for i, alpha in enumerate(alphas):
+      fig.suptitle(f'Results for $\\beta={beta}$, sample {sample}')
 
-      model = models[f'model_alpha{alpha}_beta{beta}_sample0']
+      for i, alpha in enumerate(alphas):
 
-      # Get the predictions
-      model.eval()
-      y_pred = model(torch.from_numpy(x).float()).detach().squeeze().numpy()
+        model = models[f'model_alpha{alpha}_beta{beta}_sample0']
 
-      axs[i].set_title(f'$\\alpha={alpha}$')
-      axs[i].set_xlabel('$x_1$')
-      axs[i].set_ylabel('$x_2$')
-      axs[i].set_zlabel('$y$')
+        # Get the predictions
+        model.eval()
+        y_pred = model(torch.from_numpy(x).float()).detach().squeeze().numpy()
 
-      # Plot the predictions (only one in 10)
-      axs[i].scatter(x[:, 0], x[:, 1], y_pred, c='red', label='prediction')
+        axs[i].set_title(f'$\\alpha={alpha}$')
+        axs[i].set_xlabel('$x_1$')
+        axs[i].set_ylabel('$x_2$')
+        axs[i].set_zlabel('$y$')
 
-      abs_error = np.abs(np.array(outputs[f'output_alpha{alpha}_beta{beta}']) - y_pred)
+        # Plot the predictions (only one in 10)
+        axs[i].scatter(x[:, 0], x[:, 1], y_pred, c='red', label='prediction')
 
-      # Plot the abs error
-      axs[i].scatter(x[:, 0], x[:, 1], abs_error, c='green', label='abs error')
+        abs_error = np.abs(np.array(outputs[f'output_alpha{alpha}_beta{beta}']) - y_pred)
 
-    # Make global legend
-    fig.legend(
-        handles = axs[0].get_legend_handles_labels()[0],
-        labels = axs[0].get_legend_handles_labels()[1],
-        loc='lower center'
-        )
+        # Plot the abs error
+        axs[i].scatter(x[:, 0], x[:, 1], abs_error, c='green', label='abs error')
 
-    # Saving
-    plt.savefig(os.path.join(path_to_graph_folder, 'Fits', f'fit_beta{beta}_sample{sample}.png'))
-    plt.close()
+      # Make global legend
+      fig.legend(
+          handles = axs[0].get_legend_handles_labels()[0],
+          labels = axs[0].get_legend_handles_labels()[1],
+          loc='lower center'
+          )
+
+      # Saving
+      plt.savefig(os.path.join(path_to_graph_folder, 'Fits', f'fit_beta{beta}_sample{sample}.png'))
+      plt.close()
 
 #-------------------------------------------------------------------------------
 
@@ -165,8 +171,6 @@ ax.set_ylabel('mean of concatenation')
 ax.axhline(y=0, color='grey', linestyle='--')
 
 for beta in tqdm(betas, desc='Making mean of L1 and L2 plots'):
-
-  color = np.random.rand(3,)
 
   for alpha in alphas:
 
@@ -193,7 +197,6 @@ for beta in tqdm(betas, desc='Making mean of L1 and L2 plots'):
               list(mean_l1_l2.values()),
               yerr=list(mean_std_l1_l2.values()),
               label=f'$\\beta={beta}$',
-              color=color,
               marker='o',
               markersize=5,
               capsize=5,
@@ -230,7 +233,7 @@ def calculate_Ws(varphi1, varphi2, l1_diag, l2_diag, l3_diag):
 
 # Defining function to calculate N
 
-def calculate_N(W_21, W_32):
+def calculate_Gamma(W_21, W_32):
 
   N = np.zeros((W_32.shape[0], W_32.shape[1], W_21.shape[1]))
 
@@ -241,9 +244,9 @@ def calculate_N(W_21, W_32):
 
   return N
 
-Ns = {}
+Gammas = {}
 
-for sample in tqdm(range(config['number_of_samples']), desc='Calculating Ns'):
+for sample in tqdm(range(config['number_of_samples']), desc='Calculating Gammas'):
   for beta in betas:
     for alpha in alphas:
 
@@ -251,40 +254,40 @@ for sample in tqdm(range(config['number_of_samples']), desc='Calculating Ns'):
 
       Ws = calculate_Ws(model.varphi1, model.varphi2, model.l1_diag, model.l2_diag, model.l3_diag)
 
-      N = calculate_N(Ws['W_21'], Ws['W_32'])
+      Gamma = calculate_Gamma(Ws['W_21'], Ws['W_32'])
 
-      Ns[f'N_alpha{alpha}_beta{beta}_sample{sample}'] = N
+      Gammas[f'N_alpha{alpha}_beta{beta}_sample{sample}'] = Gamma
 
 fig = plt.figure()
 ax = fig.add_subplot()
 
-ax.set_title(f'$\\alpha$ vs. norm of N')
+ax.set_title(f'$\\alpha$ vs. norm of $\\Gamma$')
 ax.set_xlabel('$\\alpha$')
-ax.set_ylabel('$||N||$')
+ax.set_ylabel('$||\\Gamma||$')
 
 ax.axhline(y=0, color='grey', linestyle='--')
 
-for beta in tqdm(betas, desc='Making norm of N plots'):
+for beta in tqdm(betas, desc='Making norm of Gamma plots'):
 
   # One element for each alpha
   # The mean is made on the samples
-  mean_of_norm_of_N = []
+  mean_of_norm_of_Gamma = []
   std_mean = []
 
   for alpha in alphas:
 
     norms_samples = []
     for sample in range(config['number_of_samples']):
-      norms_samples.append(np.linalg.norm(Ns[f'N_alpha{alpha}_beta{beta}_sample{sample}']))
+      norms_samples.append(np.linalg.norm(Gammas[f'N_alpha{alpha}_beta{beta}_sample{sample}']))
 
-    mean_of_norm_of_N.append(np.mean(norms_samples))
+    mean_of_norm_of_Gamma.append(np.mean(norms_samples))
     std_mean.append(np.std(norms_samples)/np.sqrt(config['number_of_samples']))
 
     # Normalization
 
-    max_value = max(mean_of_norm_of_N)
+    max_value = max(mean_of_norm_of_Gamma)
 
-    for elem in mean_of_norm_of_N:
+    for elem in mean_of_norm_of_Gamma:
       elem = elem/max_value
 
     for elem in std_mean:
@@ -292,7 +295,7 @@ for beta in tqdm(betas, desc='Making norm of N plots'):
 
   # Plotting
   ax.errorbar(alphas,
-              mean_of_norm_of_N,
+              mean_of_norm_of_Gamma,
               yerr=std_mean,
               label=f'$\\beta={beta}$',
               marker='o',
@@ -302,7 +305,7 @@ for beta in tqdm(betas, desc='Making norm of N plots'):
 
 ax.legend()
 
-plt.savefig(os.path.join(path_to_graph_folder, 'norm_of_N.png'))
+plt.savefig(os.path.join(path_to_graph_folder, 'norm_of_Gamma.png'))
 plt.close()
 
 #-------------------------------------------------------------------------------
@@ -428,51 +431,53 @@ def plot_connections(ax, N, W_31, positions_dict):
 
 # Start of the plot
 
-TRESHOLD = 1e-2
+if config['plot_architectures']:
 
-os.makedirs(os.path.join(path_to_graph_folder, 'Architectures'), exist_ok=True)
+  TRESHOLD = 1e-2
 
-for sample in tqdm(range(config['number_of_samples']), desc='Making architectures plots'):
-  for beta in betas:
+  os.makedirs(os.path.join(path_to_graph_folder, 'Architectures'), exist_ok=True)
 
-    # Make multiplot figure
-    num_cols = 7
-    num_rows = int(np.ceil(len(alphas) / num_cols))
-    fig, axs = plt.subplots(num_rows, num_cols, subplot_kw={'projection': '3d'}, figsize=(20, 10))
-    axs = axs.flatten()
+  for sample in tqdm(range(config['number_of_samples']), desc='Making architectures plots'):
+    for beta in betas:
 
-    fig.suptitle(f'Results for $\\beta={beta}$')
+      # Make multiplot figure
+      num_cols = 7
+      num_rows = int(np.ceil(len(alphas) / num_cols))
+      fig, axs = plt.subplots(num_rows, num_cols, subplot_kw={'projection': '3d'}, figsize=(20, 10))
+      axs = axs.flatten()
 
-    for j, alpha in enumerate(alphas):
+      fig.suptitle(f'Results for $\\beta={beta}$')
 
-      model = models[f'model_alpha{alpha}_beta{beta}_sample{sample}']
+      for j, alpha in enumerate(alphas):
 
-      varphi1 = model.varphi1
-      varphi2 = model.varphi2
-      l1_diag = model.l1_diag
-      l2_diag = model.l2_diag
-      l3_diag = model.l3_diag
+        model = models[f'model_alpha{alpha}_beta{beta}_sample{sample}']
 
-      W_21 = calculate_Ws(varphi1, varphi2, l1_diag, l2_diag, l3_diag)['W_21']
-      W_32 = calculate_Ws(varphi1, varphi2, l1_diag, l2_diag, l3_diag)['W_32']
-      W_31 = calculate_Ws(varphi1, varphi2, l1_diag, l2_diag, l3_diag)['W_31']
+        varphi1 = model.varphi1
+        varphi2 = model.varphi2
+        l1_diag = model.l1_diag
+        l2_diag = model.l2_diag
+        l3_diag = model.l3_diag
 
-      N = calculate_N(W_21, W_32)
+        W_21 = calculate_Ws(varphi1, varphi2, l1_diag, l2_diag, l3_diag)['W_21']
+        W_32 = calculate_Ws(varphi1, varphi2, l1_diag, l2_diag, l3_diag)['W_32']
+        W_31 = calculate_Ws(varphi1, varphi2, l1_diag, l2_diag, l3_diag)['W_31']
 
-      axs[j].set_title(f'$\\alpha={alpha}$')
-      axs[j].set_axis_off()
+        Gamma = calculate_Gamma(W_21, W_32)
 
-      input_dim = model.input_dim
-      hidden_dim = model.hidden_dim
-      output_dim = model.output_dim
+        axs[j].set_title(f'$\\alpha={alpha}$')
+        axs[j].set_axis_off()
 
-      positions_dict = plot_neurons(axs[j], input_dim, hidden_dim, output_dim)
+        input_dim = model.input_dim
+        hidden_dim = model.hidden_dim
+        output_dim = model.output_dim
 
-      N_quantized = quantization(N, TRESHOLD)
-      W_31_quantized = quantization(W_31, TRESHOLD)
+        positions_dict = plot_neurons(axs[j], input_dim, hidden_dim, output_dim)
 
-      plot_connections(axs[j], N_quantized, W_31_quantized, positions_dict)
+        N_quantized = quantization(Gamma, TRESHOLD)
+        W_31_quantized = quantization(W_31, TRESHOLD)
+
+        plot_connections(axs[j], N_quantized, W_31_quantized, positions_dict)
 
 
-    plt.savefig(os.path.join(path_to_graph_folder, 'Architectures', f'architectures_beta{beta}_sample{sample}.png'))
-    plt.close()
+      plt.savefig(os.path.join(path_to_graph_folder, 'Architectures', f'architectures_beta{beta}_sample{sample}.png'))
+      plt.close()

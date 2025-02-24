@@ -16,14 +16,16 @@ from definitions import Phi2_Network, target_function
 with open('config.yaml') as file:
   config = yaml.full_load(file)
 
+# Get path to save the models
 current_path = os.getcwd()
 path_to_save_folder = os.path.join(current_path, config['name_of_state_dicts_folder'])
+os.makedirs(path_to_save_folder, exist_ok=True)
 
 # Set seed for reproducibility
 np.random.seed(config['seed'])
 torch.manual_seed(config['seed'])
 
-# Use graphic card if available
+# Use graphic card if selected and available
 if torch.cuda.is_available() and config['use_gpu']:
   device = torch.device('cuda')
   print('Using GPU')
@@ -33,10 +35,6 @@ else:
 
 # 2D train input data generation
 x = np.random.uniform(-1, 1, (10000, 2))
-
-print(f"The shape of the input data is {x.shape}\n")
-
-# Creation of multiple outputs for varing alpha and beta
 
 alphas = config['alphas']
 betas = config['betas']
@@ -77,9 +75,6 @@ criterion = torch.nn.MSELoss()
 # Get regularization strength
 reg_strength = float(config['reg_strength'])
 
-# Create folder to save the models
-os.makedirs(path_to_save_folder, exist_ok=True)
-
 for sample in range(config['number_of_samples']):
   for beta in betas:
     for alpha in alphas:
@@ -91,9 +86,6 @@ for sample in range(config['number_of_samples']):
       model.to(device)
 
       model.train()
-
-      # Arbitrary high value for initial past loss
-      past_global_loss = 1e6
 
       for epoch in range(config['epochs']):
         for inputs, targets in dataloaders[f'dataloader_alpha{alpha}_beta{beta}']:
