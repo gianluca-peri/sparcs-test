@@ -24,7 +24,7 @@ path_to_graph_folder = os.path.join(current_path, config['name_of_graphs_folder'
 os.makedirs(path_to_graph_folder, exist_ok=True)
 
 # Use graphic card if available
-if torch.cuda.is_available():
+if torch.cuda.is_available() and config['use_gpu']:
   device = torch.device('cuda')
   print('Using GPU')
 else:

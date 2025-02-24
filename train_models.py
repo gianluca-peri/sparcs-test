@@ -24,7 +24,7 @@ np.random.seed(config['seed'])
 torch.manual_seed(config['seed'])
 
 # Use graphic card if available
-if torch.cuda.is_available():
+if torch.cuda.is_available() and config['use_gpu']:
   device = torch.device('cuda')
   print('Using GPU')
 else:

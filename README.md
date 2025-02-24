@@ -8,10 +8,9 @@ The linked notebook is optimized to run on Colab's free tier by scaling down the
 
 ## How to create the environment to run the code
 
-The installation instructions assume a Linux system with an Nvidia GPU.
-First of all you should run `nvidia-smi` to check the specs of your card.
+The installation instructions assume a Linux system with an Nvidia GPU, though `config.yaml` provides an option to run the code on CPU.
 
-In the following we also assume `conda` usage; it is advisable to run these shell instructions one by one, after having installed `miniconda`
+In the following we also assume the use of `conda` for environment management. It is advisable to run these shell instructions one by one, after having installed `miniconda`
 
 ```bash
 conda create -n "sparcs" python

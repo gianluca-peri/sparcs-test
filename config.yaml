@@ -8,3 +8,4 @@ reg_strength: 1e-5
 nn_input_dim: 3
 nn_hidden_dim: 300
 nn_output_dim: 1
+use_gpu: True
