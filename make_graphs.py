@@ -99,7 +99,7 @@ for beta in tqdm(betas, desc='Making datasets plots'):
 
   # Saving
   plt.savefig(os.path.join(path_to_graph_folder, 'Datasets', f'dataset_beta{beta}.png'))
-  plt.clf()
+  plt.close()
 
 #-------------------------------------------------------------------------------
 
@@ -150,7 +150,7 @@ for sample in tqdm(range(config['number_of_samples']), desc='Making goodnes of f
 
     # Saving
     plt.savefig(os.path.join(path_to_graph_folder, 'Fits', f'fit_beta{beta}_sample{sample}.png'))
-    plt.clf()
+    plt.close()
 
 #-------------------------------------------------------------------------------
 
@@ -207,7 +207,7 @@ for beta in tqdm(betas, desc='Making mean of L1 and L2 plots'):
 ax.legend()
 
 plt.savefig(os.path.join(path_to_graph_folder, 'mean_of_concatenation_of_eigenvalues.png'))
-plt.clf()
+plt.close()
 
 #-------------------------------------------------------------------------------
 
@@ -308,7 +308,7 @@ for beta in tqdm(betas, desc='Making norm of N plots'):
 ax.legend()
 
 plt.savefig(os.path.join(path_to_graph_folder, 'norm_of_N.png'))
-plt.clf()
+plt.close()
 
 #-------------------------------------------------------------------------------
 
@@ -480,4 +480,4 @@ for sample in tqdm(range(config['number_of_samples']), desc='Making architecture
 
 
     plt.savefig(os.path.join(path_to_graph_folder, 'Architectures', f'architectures_beta{beta}_sample{sample}.png'))
-    plt.clf()
+    plt.close()
