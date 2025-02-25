@@ -34,10 +34,9 @@ def train_and_save(alpha, beta, learning_rate, reg_strength, epochs, device, dat
       pred = model(inputs)
       loss = criterion(pred, targets)
 
-      if config['regularization']:
-        for name, param in model.named_parameters():
-          if 'l1' in name or 'l2' in name:
-            loss += reg_strength * torch.norm(param, p=2)
+      for name, param in model.named_parameters():
+        if 'l1' in name or 'l2' in name:
+          loss += reg_strength * torch.norm(param, p=2)
 
       loss.backward()
       optimizer.step()
