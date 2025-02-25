@@ -39,6 +39,8 @@ if the script doesn't work try running `chmod +x` on it first.
 
 ### Running in parallel
 
+**Attention:** before running the following code check the compatibility between your system's specs and the parameters present in the `run_train_in_parallel.py` script.
+
 To accelerate the training you can run the code in parallel using `ray` with:
 
 ```bash
