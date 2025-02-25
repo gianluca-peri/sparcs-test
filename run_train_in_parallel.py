@@ -16,22 +16,35 @@ os.makedirs(path_to_save_folder, exist_ok=True)
 
 # Wrap the imported function as a remote function
 # BE CAREFUL with the num_cpus and num_gpus values
-@ray.remote(num_cpus=1, num_gpus=0.25)
-def remote_train_and_save(alpha, beta, learning_rate, reg_strength, epochs, device, dataloader, save_path):
-
-    if device == 'cuda':
+if config['use_gpu']:
+    @ray.remote(num_gpus=0.25)
+    def remote_train_and_save(alpha, beta, learning_rate, reg_strength, epochs, device, dataloader, save_path):
+            
         torch.cuda.set_per_process_memory_fraction(0.25, torch.device('cuda'))
 
-    train_and_save(
-        alpha,
-        beta,
-        learning_rate,
-        reg_strength,
-        epochs,
-        device,
-        dataloader,
-        save_path
-    )
+        train_and_save(
+            alpha,
+            beta,
+            learning_rate,
+            reg_strength,
+            epochs,
+            device,
+            dataloader,
+            save_path
+        )
+else:
+    @ray.remote(num_cpus=1)
+    def remote_train_and_save(alpha, beta, learning_rate, reg_strength, epochs, device, dataloader, save_path):
+        train_and_save(
+            alpha,
+            beta,
+            learning_rate,
+            reg_strength,
+            epochs,
+            device,
+            dataloader,
+            save_path
+        )
 
 # Initialize Ray
 # BE CAREFUL with the num_cpus and num_gpus values
