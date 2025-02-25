@@ -27,6 +27,10 @@ Keep in mind that the link in `pip install torch --index-url https://download.py
 
 ## How to run the code
 
+## Create the datasets
+
+First of all you should create the training datasets by simply running `create_datasets.py`.
+
 ### Simple run
 
 You can train the models by running the `train_models.py` script. Since the training can take some time `run_in_background.sh` is also available to run the same script in background:
