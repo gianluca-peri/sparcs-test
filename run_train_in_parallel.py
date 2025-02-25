@@ -6,7 +6,6 @@ from torch.utils.data import DataLoader
 
 from train_models import train_and_save
 
-# Load configuration (using safe_load here).
 with open('config.yaml', 'r') as file:
     config = yaml.safe_load(file)
 
