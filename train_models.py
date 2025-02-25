@@ -5,104 +5,98 @@ The models are saved in the format 'model_alpha{alpha}_beta{beta}_sample{sample}
 
 import os
 import torch
-import numpy as np
-from torch.utils.data import TensorDataset, DataLoader
+from torch.utils.data import DataLoader
 from torch.optim import Adam
 import yaml
 
-from definitions import Phi2_Network, target_function
+from definitions import Phi2_Network
 
-# Import yaml config
-with open('config.yaml') as file:
-  config = yaml.full_load(file)
+def train_and_save(alpha, beta, learning_rate, reg_strength, epochs, device, dataloader, save_path, verbose=False):
+  """
+  Train the model and save it.
+  """
 
-# Get path to save the models
-current_path = os.getcwd()
-path_to_save_folder = os.path.join(current_path, config['name_of_state_dicts_folder'])
-os.makedirs(path_to_save_folder, exist_ok=True)
+  if verbose:
+    print(f"Training model for alpha={alpha} and beta={beta}...")
 
-# Set seed for reproducibility
-np.random.seed(config['seed'])
-torch.manual_seed(config['seed'])
+  model = Phi2_Network().to(device)
+  criterion = torch.nn.MSELoss().to(device)
+  optimizer = Adam(model.parameters(), lr=learning_rate)
 
-# Use graphic card if selected and available
-if torch.cuda.is_available() and config['use_gpu']:
-  device = torch.device('cuda')
-  print('Using GPU')
-else:
-  device = torch.device('cpu')
-  print('Using CPU')
+  model.train()
 
-# 2D train input data generation
-x = np.random.uniform(-1, 1, (10000, 2))
+  for _ in range(epochs):
+    for inputs, targets in dataloader:
 
-alphas = config['alphas']
-betas = config['betas']
+      inputs, targets = inputs.to(device), targets.to(device)
 
-outputs = {}
+      optimizer.zero_grad()
+      pred = model(inputs)
+      loss = criterion(pred, targets)
 
-for alpha in alphas:
-  for beta in betas:
-    outputs[f"output_alpha{alpha}_beta{beta}"] = target_function(alpha, beta, x)
+      if config['regularization']:
+        for name, param in model.named_parameters():
+          if 'l1' in name or 'l2' in name:
+            loss += reg_strength * torch.norm(param, p=2)
 
-# Create torch datasets
+      loss.backward()
+      optimizer.step()
 
-x_torch = torch.from_numpy(x).float()
+  torch.save(model.state_dict(), save_path)
 
-datasets = {}
+if __name__ == '__main__':
 
-for alpha in alphas:
-  for beta in betas:
+  # Import yaml config
+  with open('config.yaml') as file:
+    config = yaml.full_load(file)
 
-    y_torch = torch.from_numpy(outputs[f'output_alpha{alpha}_beta{beta}']).float().unsqueeze(1)
+  # Get path to save the models
+  current_path = os.getcwd()
+  path_to_datasets_folder = os.path.join(current_path, config['name_of_datasets_folder'])
+  path_to_save_folder = os.path.join(current_path, config['name_of_state_dicts_folder'])
+  os.makedirs(path_to_save_folder, exist_ok=True)
 
-    datasets[f'dataset_alpha{alpha}_beta{beta}'] = TensorDataset(x_torch, y_torch)
+  # Set seed for reproducibility
+  torch.manual_seed(config['seed'])
 
-# Create dataloaders
+  # Use graphic card if selected and available
+  if torch.cuda.is_available() and config['use_gpu']:
+    device = torch.device('cuda')
+    print('Using GPU')
+  else:
+    device = torch.device('cpu')
+    print('Using CPU')
 
-dataloaders = {}
+  # Get alphas and betas
+  alphas = config['alphas']
+  betas = config['betas']
 
-for alpha in alphas:
-  for beta in betas:
+  for alpha in alphas:
+    for beta in betas:
 
-    dataloader = DataLoader(datasets[f'dataset_alpha{alpha}_beta{beta}'], batch_size=100, shuffle=True)
+      dataset = torch.load(
+        os.path.join(path_to_datasets_folder, f'dataset_alpha{alpha}_beta{beta}.pt'),
+        weights_only=False
+      )
 
-    dataloaders[f'dataloader_alpha{alpha}_beta{beta}'] = dataloader
+      dataloader = DataLoader(dataset, batch_size=config['train_batch_size'], shuffle=True)
 
-# Define loss function
-criterion = torch.nn.MSELoss()
+      for sample in range(config['number_of_samples']):
 
-# Get regularization strength
-reg_strength = float(config['reg_strength'])
+        save_name = f'model_alpha{alpha}_beta{beta}_sample{sample}.pt'
 
-for sample in range(config['number_of_samples']):
-  for beta in betas:
-    for alpha in alphas:
+        save_path = os.path.join(path_to_save_folder, save_name)
 
-      print(f"Training model for alpha={alpha} and beta={beta} for sample {sample}...")
-
-      model = Phi2_Network()
-      optimizer = Adam(model.parameters(), lr=0.001)
-      model.to(device)
-
-      model.train()
-
-      for epoch in range(config['epochs']):
-        for inputs, targets in dataloaders[f'dataloader_alpha{alpha}_beta{beta}']:
-
-          inputs, targets = inputs.to(device), targets.to(device)
-
-          optimizer.zero_grad()
-          pred = model(inputs)
-          loss = criterion(pred, targets)
-
-          if config['regularization']:
-            for name, param in model.named_parameters():
-              if 'l1' in name or 'l2' in name:
-                loss += reg_strength * torch.norm(param, p=2)
-
-          loss.backward()
-          optimizer.step()
-
-      # Save the model
-      torch.save(model.state_dict(), os.path.join(path_to_save_folder, f'model_alpha{alpha}_beta{beta}_sample{sample}.pt'))
+        train_and_save(
+          alpha=alpha,
+          beta=beta,
+          learning_rate=config['learning_rate'],
+          reg_strength=config['reg_strength'],
+          epochs=config['epochs'],
+          device=device,
+          dataloader=dataloader,
+          save_path=save_path,
+          verbose=True
+        )
+                      
+        print(f"Model for alpha={alpha}, beta={beta} and sample={sample} saved.")

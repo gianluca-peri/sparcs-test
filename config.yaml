@@ -1,3 +1,4 @@
+name_of_datasets_folder: 'Datasets'
 name_of_state_dicts_folder: 'State_Dicts'
 name_of_graphs_folder: 'Graphs'
 betas: [5, 1000]
@@ -5,8 +6,10 @@ alphas: [0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 
 seed: 42
 number_of_samples: 100
 epochs: 300
+train_batch_size: 100
+learning_rate: 0.001
 regularization: True
-reg_strength: 1e-5
+reg_strength: 0.00001
 nn_input_dim: 3
 nn_hidden_dim: 300
 nn_output_dim: 1
