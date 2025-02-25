@@ -27,19 +27,33 @@ Keep in mind that the link in `pip install torch --index-url https://download.py
 
 ## How to run the code
 
+### Simple run
+
 You can train the models by running the `train_models.py` script. Since the training can take some time `run_in_background.sh` is also available to run the same script in background:
 
 ```bash
 ./run_in_background.sh train_models.py
 ```
 
-If the bash script won't work keep maybe try to run `chmod +x` on it. An option to run in parallel, with ray, is also provided through the `run_train_in_parallel.py` script; you can also run this in background with:
+if the script doesn't work try running `chmod +x` on it first.
+
+### Running in parallel
+
+To accelerate the training you can run the code in parallel using `ray` with:
+
+```bash
+python run_train_in_parallel.py
+```
+
+This script can also be executed in the background:
 
 ```bash
 ./run_in_background.sh run_train_in_background.py
 ```
 
-If you wish to change the parameters of the experiment you can do so by simply modifing the `config.yaml` file; currently the parameters are the same as the ones used to get the results presented in the paper.
+### Modifying the experiment parameters
+
+To change the experiment parameters, simply modify the `config.yaml` file. The default parameters match those used to generate the results presented in the paper.
 
 ## Acknowledgments
 
