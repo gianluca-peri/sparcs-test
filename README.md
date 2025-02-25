@@ -10,7 +10,7 @@ The linked notebook is optimized to run on Colab's free tier by scaling down the
 
 The installation instructions assume a Linux system with an Nvidia GPU, though `config.yaml` provides an option to run the code on CPU.
 
-In the following we also assume the use of `conda` for environment management. It is advisable to run these shell instructions one by one, after having installed `miniconda`
+In the following we also assume the use of `conda` for environment management. The following commands should be run one by one after installing `miniconda`:
 
 ```bash
 conda create -n "sparcs" python=3.12.0
@@ -27,7 +27,17 @@ Keep in mind that the link in `pip install torch --index-url https://download.py
 
 ## How to run the code
 
-You can train the models by running the `train_models.py` script. Since the training can take some time `run_train_in_background.sh` is also available to run the same script in background, logging the output (just remember to `chmod +x` if it doesn't work).
+You can train the models by running the `train_models.py` script. Since the training can take some time `run_in_background.sh` is also available to run the same script in background:
+
+```bash
+./run_in_background.sh train_models.py
+```
+
+If the bash script won't work keep maybe try to run `chmod +x` on it. An option to run in parallel, with ray, is also provided through the `run_train_in_parallel.py` script; you can also run this in background with:
+
+```bash
+./run_in_background.sh run_train_in_background.py
+```
 
 If you wish to change the parameters of the experiment you can do so by simply modifing the `config.yaml` file; currently the parameters are the same as the ones used to get the results presented in the paper.
 
