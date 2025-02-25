@@ -14,14 +14,16 @@ path_to_datasets_folder = os.path.join(current_path, config['name_of_datasets_fo
 path_to_save_folder = os.path.join(current_path, config['name_of_state_dicts_folder'])
 os.makedirs(path_to_save_folder, exist_ok=True)
 
+# Set cuda visible devices if config['use_gpu'] is True
+# BE CAREFUL with the CUDA_VISIBLE_DEVICES value
+if config['use_gpu']:
+    os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+
 # Wrap the imported function as a remote function
 # BE CAREFUL with the num_cpus and num_gpus values
 if config['use_gpu']:
-    @ray.remote(num_gpus=0.25)
+    @ray.remote(num_gpus=0.2)
     def remote_train_and_save(alpha, beta, learning_rate, reg_strength, epochs, device, dataloader, save_path):
-            
-        torch.cuda.set_per_process_memory_fraction(0.25, torch.device('cuda'))
-
         train_and_save(
             alpha,
             beta,
