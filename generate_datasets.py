@@ -6,7 +6,7 @@ The datasets are saved in the format 'dataset_alpha{alpha}_beta{beta}.pt'.
 import os
 import numpy as np
 import torch
-from torch.utils.data import TensorDataset, DataLoader
+from torch.utils.data import TensorDataset
 import yaml
 
 from definitions import target_function
