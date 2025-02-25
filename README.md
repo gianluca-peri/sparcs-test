@@ -29,7 +29,7 @@ Keep in mind that the link in `pip install torch --index-url https://download.py
 
 ### Create the datasets
 
-First of all you should create the training datasets by simply running `create_datasets.py`.
+First of all you should create the training datasets by simply running `generate_datasets.py`.
 
 ### Simple run
 
