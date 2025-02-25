@@ -13,8 +13,9 @@ The installation instructions assume a Linux system with an Nvidia GPU, though `
 In the following we also assume the use of `conda` for environment management. It is advisable to run these shell instructions one by one, after having installed `miniconda`
 
 ```bash
-conda create -n "sparcs" python
+conda create -n "sparcs" python=3.12.0
 conda activate sparcs
+pip install ray
 pip install numpy
 pip install torch --index-url https://download.pytorch.org/whl/cu124
 pip install matplotlib
