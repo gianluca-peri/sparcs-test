@@ -67,7 +67,6 @@ for alpha in config['alphas']:
                 dataloader,
                 save_path
             )
-            # Wait for the task to complete.
             tasks.append(task)
 
 # Monitor progress
