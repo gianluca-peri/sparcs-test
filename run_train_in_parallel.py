@@ -9,6 +9,9 @@ from train_models import train_and_save
 with open('config.yaml', 'r') as file:
     config = yaml.safe_load(file)
 
+# Set torch seed for reproducibility
+torch.manual_seed(config['seed'])
+
 current_path = os.getcwd()
 path_to_datasets_folder = os.path.join(current_path, config['name_of_datasets_folder'])
 path_to_save_folder = os.path.join(current_path, config['name_of_state_dicts_folder'])
