@@ -2,6 +2,7 @@ import os
 import ray
 import yaml
 import torch
+import time
 from torch.utils.data import DataLoader
 
 from train_models import train_and_save
@@ -26,11 +27,12 @@ if config['use_gpu']:
 # BE CAREFUL with the num_cpus and num_gpus values
 if config['use_gpu']:
     @ray.remote(num_gpus=0.2)
-    def remote_train_and_save(alpha, beta, learning_rate, reg_strength, epochs, device, dataloader, save_path):
+    def remote_train_and_save(alpha, beta, learning_rate, kind_of_reg, reg_strength, epochs, device, dataloader, save_path):
         train_and_save(
             alpha,
             beta,
             learning_rate,
+            kind_of_reg,
             reg_strength,
             epochs,
             device,
@@ -39,11 +41,12 @@ if config['use_gpu']:
         )
 else:
     @ray.remote(num_cpus=1)
-    def remote_train_and_save(alpha, beta, learning_rate, reg_strength, epochs, device, dataloader, save_path):
+    def remote_train_and_save(alpha, beta, learning_rate, kind_of_reg, reg_strength, epochs, device, dataloader, save_path):
         train_and_save(
             alpha,
             beta,
             learning_rate,
+            kind_of_reg,
             reg_strength,
             epochs,
             device,
@@ -65,6 +68,8 @@ else:
 
 tasks = []
 
+start_time = time.time()
+
 for alpha in config['alphas']:
     for beta in config['betas']:
         # Load the dataset for each (alpha, beta) pair once.
@@ -78,6 +83,7 @@ for alpha in config['alphas']:
                 alpha,
                 beta,
                 config['learning_rate'],
+                config['kind_of_regularization'],
                 config['reg_strength'],
                 config['epochs'],
                 device,
@@ -88,10 +94,13 @@ for alpha in config['alphas']:
 
 # Monitor progress
 while tasks:
-    completed, tasks = ray.wait(tasks)
-    number_of_completed_tasks = len(completed)
+    _, tasks = ray.wait(tasks)
     number_of_remaining_tasks = len(tasks)
-    print(f"Completed {number_of_completed_tasks} tasks. {number_of_remaining_tasks} tasks remaining.")
+    minutes_elapsed = (time.time() - start_time) // 60
+    remaining_seconds = (time.time() - start_time) % 60
+    print(
+        f"{number_of_remaining_tasks} tasks remaining. Time elapsed: {minutes_elapsed:.0f} minutes {remaining_seconds:.0f} seconds."
+        )
 
 # Shutdown Ray.
 ray.shutdown()

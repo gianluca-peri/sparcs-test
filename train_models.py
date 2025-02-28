@@ -11,7 +11,7 @@ import yaml
 
 from definitions import Phi2_Network
 
-def train_and_save(alpha, beta, learning_rate, reg_strength, epochs, device, dataloader, save_path, verbose=False):
+def train_and_save(alpha, beta, learning_rate, kinf_of_reg, reg_strength, epochs, device, dataloader, save_path, verbose=False):
   """
   Train the model and save it.
   """
@@ -36,7 +36,12 @@ def train_and_save(alpha, beta, learning_rate, reg_strength, epochs, device, dat
 
       for name, param in model.named_parameters():
         if 'l1' in name or 'l2' in name:
-          loss += reg_strength * torch.norm(param, p=2)
+          if kinf_of_reg == 'L1':
+            loss += reg_strength * torch.norm(param, p=1)
+          elif kinf_of_reg == 'L2':
+            loss += reg_strength * torch.norm(param, p=2)
+          else:
+            raise ValueError('Invalid regularization type.')
 
       loss.backward()
       optimizer.step()
@@ -90,6 +95,7 @@ if __name__ == '__main__':
           alpha=alpha,
           beta=beta,
           learning_rate=config['learning_rate'],
+          kinf_of_reg=config['kinf_of_regularization'],
           reg_strength=config['reg_strength'],
           epochs=config['epochs'],
           device=device,

@@ -24,7 +24,7 @@ os.makedirs(path_to_save_folder, exist_ok=True)
 np.random.seed(config['seed'])
 
 # 2D train input data generation
-x = np.random.uniform(-1, 1, (10000, 2))
+x = np.random.uniform(-1, 1, (config['number_of_dataset_points'], 2))
 
 alphas = config['alphas']
 betas = config['betas']

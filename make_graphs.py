@@ -34,7 +34,7 @@ else:
   print('Using CPU')
 
 # x creation
-x = np.random.uniform(-1, 1, (10000, 2))
+x = np.random.uniform(-1, 1, (config['number_of_dataset_points'], 2))
 
 # Get the alphas and betas
 
