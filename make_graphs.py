@@ -164,7 +164,6 @@ mean_std_l1_l2 = {}
 
 fig = plt.figure()
 ax = fig.add_subplot()
-ax.set_title('$\\alpha$ vs. mean of concatenation of eigenvalues')
 ax.set_xlabel('$\\alpha$')
 ax.set_ylabel('mean of concatenation')
 
@@ -261,7 +260,6 @@ for sample in tqdm(range(config['number_of_samples']), desc='Calculating Gammas'
 fig = plt.figure()
 ax = fig.add_subplot()
 
-ax.set_title(f'$\\alpha$ vs. norm of $\\Gamma$')
 ax.set_xlabel('$\\alpha$')
 ax.set_ylabel('$||\\Gamma||$')
 
