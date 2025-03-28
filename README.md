@@ -24,8 +24,6 @@ pip install tqdm
 pip install ipykernel
 pip install ipywidgets
 pip install scipy
-pip install scikit-learn
-pip install seaborn
 ```
 
 Keep in mind that the link in `pip install torch --index-url https://download.pytorch.org/whl/cu124` could be dependent on your card, check the [PyTorch site](https://pytorch.org/) for more informations.
