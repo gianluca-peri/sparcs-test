@@ -66,9 +66,9 @@ This script can also be executed in the background:
 
 To change the experiment parameters, simply modify the `config.yaml` file. The default parameters match those used to generate the results presented in the paper.
 
-## The extra experiment notebook
+## The extra notebooks
 
-This project also include a separated notebook dubbed `extra_experiment.ipynb`: it carries out the *second test* reported in the paper, and you can simply run it like any other jupyter notebook.
+This project also includes two extra notebooks: the first one, `show_scaling_law.ipynb`, simply carries out the steps to produce one of the graphs present in the paper. The second one, dubbed `extra_experiment.ipynb`, is more important: it carries out the *second test* reported in the paper, and you can simply run it like any other jupyter notebook.
 
 ## Acknowledgments
 
@@ -76,6 +76,6 @@ We would like to thank the following institutions for their support:
 
 <p float="left">
     <a href="https://www.unifi.it/en"><img src="https://upload.wikimedia.org/wikipedia/commons/b/b4/Logo_unifi.jpg" height="100" /></a>
-    <a href="https://home.infn.it/en/"><img src="https://home.infn.it/images/news/LOGO_INFN_NEWS_sito.jpg" height="100" /></a>
+    <a href="https://home.infn.it/en/"><img src="https://www.infn.it/wp-content/uploads/2017/06/LOGO_INFN_NEWS_sito.jpg" height="100" /></a>
     <a href="https://next-generation-eu.europa.eu/index_en"><img src="https://commission.europa.eu/sites/default/files/styles/oe_theme_medium_no_crop/public/2022-11/next_gen_eu_logo_210611_360_2403.jpg?itok=kITbDc5L" height="100" /></a>
 </p>
