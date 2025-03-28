@@ -24,6 +24,8 @@ pip install tqdm
 pip install ipykernel
 pip install ipywidgets
 pip install scipy
+pip install scikit-learn
+pip install seaborn
 ```
 
 Keep in mind that the link in `pip install torch --index-url https://download.pytorch.org/whl/cu124` could be dependent on your card, check the [PyTorch site](https://pytorch.org/) for more informations.
@@ -63,6 +65,10 @@ This script can also be executed in the background:
 ### Modifying the experiment parameters
 
 To change the experiment parameters, simply modify the `config.yaml` file. The default parameters match those used to generate the results presented in the paper.
+
+## The extra experiment notebook
+
+This project also include a separated notebook dubbed `extra_experiment.ipynb`: it carries out the *second test* reported in the paper, and you can simply run it like any other jupyter notebook.
 
 ## Acknowledgments
 
