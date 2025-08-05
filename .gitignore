@@ -3,3 +3,5 @@ Datasets/
 State_Dicts/
 Graphs/
 train.log
+Experiment-CIFAR10/**/
+Experiment-CIFAR100/**/
