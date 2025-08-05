@@ -2,9 +2,9 @@
 
 This repository contains some PyTorch code to test the capabilities of the novel SPARCS paradigm for NAS (*Neural Architecture Search*). The code has been written with simplicity in mind, prioritizing clarity over efficiency.
 
-A **lighter** version of this code is available in notebook form at [this link](https://colab.research.google.com/drive/1PJeW-4dCKZ9oDNq8t3-yHUsZdGbOJF2y?usp=sharing).
+A **lighter** demo version of this code is available in notebook form at [this link](https://colab.research.google.com/drive/1PJeW-4dCKZ9oDNq8t3-yHUsZdGbOJF2y?usp=sharing).
 
-The linked notebook is optimized to run on Colab's free tier by scaling down the experiment's parameters considerably. As a result, the outcomes achieved with the notebook will not match the quality of those obtained using a local installation of this repository's code.
+The linked notebook is optimized to run on Colab's free tier by scaling down the experiment's parameters considerably (and also by cutting some experiments). As a result, the outcomes achieved with the notebook will not match the quality of those obtained using a local installation of this repository's code.
 
 ## How to create the environment to run the code
 
@@ -64,9 +64,19 @@ This script can also be executed in the background:
 
 To change the experiment parameters, simply modify the `config.yaml` file. The default parameters match those used to generate the results presented in the paper.
 
-## The extra notebooks
+## The extra notebook
 
-This project also includes two extra notebooks: the first one, `show_scaling_law.ipynb`, simply carries out the steps to produce one of the graphs present in the paper. The second one, dubbed `extra_experiment.ipynb`, is more important: it carries out the *second test* reported in the paper, and you can simply run it like any other jupyter notebook.
+This project also includes an extra notebook: `show_scaling_law.ipynb`. It simply carries out the steps to produce one of the graphs present in the paper.
+
+## Extra Experiments
+
+This repository also contains the code for the three additional experiments described in the paper beyond the main one. The second experiment (*teacher-student*) is presented in the main body of the paper, while the last two (*on CIFAR*) are described in Appendix F.
+
+- The code for the second experiment is available at [this link](https://colab.research.google.com/drive/1pZi3sMPS9WKnCXkthKNAGwmHn0O2ejOA)
+- The code for the final two experiments is located in the folders `Experiment-CIFAR10` and `Experiment-CIFAR100`.
+
+To run these last experiments, simply execute the Python scripts in each folder, or use the provided `.sh` scripts for background execution.
+
 
 ## Acknowledgments
 
