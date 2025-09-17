@@ -52,9 +52,23 @@ class SPARCS(nn.Module):
         self.bias = bias
         self.number_of_layers = len(self.layers_dim)
         self.W = None
-        self.layer_norms = nn.ModuleList([
-            nn.LayerNorm(self.layers_dim[i]) for i in range(1, len(self.layers_dim))
-        ])
+
+    def reset_weights(self):
+        """
+        Reset the cached weight matrices.
+        """
+        self.W = None
+
+    def reg_term(self, reg_cost=1e-4):
+        """
+        Compute the regularization term: lasso on the eigenvalues.
+        Notice, the last diagonal is not regularized.
+        """
+        reg = 0.0
+        for i, lam in enumerate(self.lambda_diags):
+            if i != len(self.lambda_diags) - 1:
+                reg += torch.sum(torch.abs(lam))
+        return reg * reg_cost
 
     def build_weight_matrices(self):
         """
@@ -86,6 +100,20 @@ class SPARCS(nn.Module):
                 W[i][j] = sign * prod
 
         return W
+    
+    def select_just_best_projectors(self, num_best=1):
+        """
+        Set to zero all eigenvalues except the top `num_best` ones, globally.
+        """
+        all_lambdas = torch.cat([lam.flatten() for lam in self.lambda_diags])
+        if num_best >= len(all_lambdas):
+            return  # Nothing to do
+
+        topk_values, _ = torch.topk(all_lambdas, num_best)
+        threshold = topk_values[-1].item()
+
+        for lam in self.lambda_diags:
+            lam.data = torch.where(lam.data >= threshold, lam.data, torch.zeros_like(lam.data))
 
     def forward(self, x):
         """
@@ -110,7 +138,7 @@ class SPARCS(nn.Module):
             for j in range(i - 1):
                 a_i += activations[j] @ self.W[i][j].T
 
-            a_i = self.layer_norms[i-1](a_i)
+            a_i /= i
             a_i = self.non_lin(a_i)
 
             activations.append(a_i)

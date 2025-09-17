@@ -71,6 +71,9 @@ def main():
             optimizer.zero_grad()
             output = model(data)
             loss = criterion(output, target)
+
+            loss += model.reg_term(reg_cost=1e-4)  # L1 regularization term
+
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), gradient_clipping)
             optimizer.step()
@@ -139,6 +142,7 @@ def main():
     plt.show()
 
     # --- Testing ---
+    # Complete test
     model.eval()
     correct = 0
     with torch.no_grad():
@@ -150,6 +154,24 @@ def main():
 
     acc = 100. * correct / len(test_loader.dataset)
     print(f"Test Accuracy: {acc:.2f}%")
+
+    # Test only for top eigenvalues
+    model.reset_weights()  # Ensure weights are rebuilt
+    top_eigenvalues_numbers = [1000, 500, 200, 100, 50, 20, 10, 5, 1] # Important to have them in decreasing order
+    for num in top_eigenvalues_numbers:
+        model.select_just_best_projectors(num_best=num)
+        model.eval()
+        correct = 0
+        with torch.no_grad():
+            for data, target in test_loader:
+                data, target = data.to(device), target.to(device)
+                output = model(data)
+                pred = output.argmax(dim=1)
+                correct += pred.eq(target).sum().item()
+        
+        acc = 100. * correct / len(test_loader.dataset)
+        print(f"Test Accuracy with top {num} eigenvalues: {acc:.2f}%")
+        model.reset_weights()  # Reset weights for next iteration
 
 
 if __name__ == "__main__":
