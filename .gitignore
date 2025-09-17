@@ -1,0 +1,11 @@
+Experiments_SPARCS/__pycache__/
+Experiments_SPARCS/Datasets/
+Experiments_SPARCS/State_Dicts/
+Experiments_SPARCS/Graphs/
+Experiments_SPARCS/train.log
+Experiments_SPARCS/Experiment-CIFAR10/**/
+Experiments_SPARCS/Experiment-CIFAR100/**/
+data/
+sparcs/__pycache__/
+best_model.pth
+training_plots.png
