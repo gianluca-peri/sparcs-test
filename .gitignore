@@ -6,6 +6,7 @@ Experiments_SPARCS/train.log
 Experiments_SPARCS/Experiment-CIFAR10/**/
 Experiments_SPARCS/Experiment-CIFAR100/**/
 data/
+results/
 sparcs/__pycache__/
 best_model.pth
 training_plots.png

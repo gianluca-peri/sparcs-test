@@ -10,28 +10,61 @@ from torch.utils.data import DataLoader, random_split
 import matplotlib.pyplot as plt
 import numpy as np
 
+import logging
+import os
+import argparse
+
+from datasets import load_dataset
+from torch.utils.data import Dataset
+
 from sparcs import sparcs_module
 
 
-def main():
-    # --- Hyperparameters ---
-    batch_size = 64
-    epochs = 128
-    lr = 1e-3
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    validation_split = 0.1
-    patience = 10
-    gradient_clipping = 1.0
+class HFDataset(Dataset):
+    def __init__(self, hf_dataset):
+        self.data = hf_dataset
 
-    # --- Data ---
-    transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Lambda(lambda x: x.view(-1))  # flatten 28x28 → 784
-    ])
-    
-    # Load full training data
-    full_train_dataset = datasets.MNIST("./data", train=True, download=True, transform=transform)
-    
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        item = self.data[idx]
+        # Ensure data is float and label is long
+        return torch.tensor(item['x'], dtype=torch.float32), torch.tensor(item['y'], dtype=torch.long)
+
+
+def get_data_loaders(dataset_name, batch_size, validation_split):
+    """
+    Returns the data loaders for the specified dataset.
+    """
+    data_root = "./Data/"
+    if dataset_name == 'mnist_1d':
+        # Load from Hugging Face
+        hf_dataset = load_dataset("christopher/mnist1d")
+        full_train_dataset = HFDataset(hf_dataset['train'])
+        test_dataset = HFDataset(hf_dataset['test'])
+        input_dim = 40  # As specified by the dataset
+    elif dataset_name == 'fashion_mnist':
+        transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Lambda(lambda x: x.view(-1))
+        ])
+        input_dim = 28 * 28
+        full_train_dataset = datasets.FashionMNIST(data_root, train=True, download=True, transform=transform)
+        test_dataset = datasets.FashionMNIST(data_root, train=False, transform=transform)
+    elif dataset_name == 'mnist':
+        transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize((0.1307,), (0.3081,)),
+            transforms.Lambda(lambda x: x.view(-1))
+        ])
+        input_dim = 28 * 28
+        full_train_dataset = datasets.MNIST(data_root, train=True, download=True, transform=transform)
+        test_dataset = datasets.MNIST(data_root, train=False, transform=transform)
+    else:
+        raise ValueError(f"Unknown dataset: {dataset_name}")
+
+
     # Split training data into training and validation sets
     num_train = int((1 - validation_split) * len(full_train_dataset))
     num_val = len(full_train_dataset) - num_train
@@ -39,14 +72,42 @@ def main():
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
-    
-    test_loader = DataLoader(
-        datasets.MNIST("./data", train=False, transform=transform),
-        batch_size=batch_size, shuffle=False
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+
+    return train_loader, val_loader, test_loader, input_dim
+
+
+def main(args):
+    # --- Create results directory ---
+    results_dir = os.path.join('results', args.dataset)
+    os.makedirs(results_dir, exist_ok=True)
+
+    # --- Setup logging ---
+    log_file = os.path.join(results_dir, 'training.log')
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(message)s',
+        handlers=[
+            logging.FileHandler(log_file, mode='w'),
+            logging.StreamHandler()
+        ]
     )
+    logger = logging.getLogger()
+    logger.info(f"Results will be saved to: {results_dir}")
+
+    # --- Hyperparameters ---
+    batch_size = 64
+    epochs = 128
+    lr = 1e-3
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    validation_split = 0.1
+    patience = 20
+    gradient_clipping = 1.0
+
+    # --- Data ---
+    train_loader, val_loader, test_loader, input_dim = get_data_loaders(args.dataset, batch_size, validation_split)
 
     # --- Model ---
-    input_dim = 28 * 28
     hidden_dim = 256
     output_dim = 10
     model = sparcs_module.SPARCS([input_dim, hidden_dim, hidden_dim, output_dim], activation="relu", bias=True).to(device)
@@ -55,7 +116,7 @@ def main():
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=lr)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=0.5, patience=patience//2)
-
+    
     # --- Training Loop with Early Stopping ---
     train_losses = []
     val_accuracies = []
@@ -72,7 +133,7 @@ def main():
             output = model(data)
             loss = criterion(output, target)
 
-            loss += model.reg_term(reg_cost=1e-4)  # L1 regularization term
+            loss += model.reg_term(reg_cost=1e-4)
 
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), gradient_clipping)
@@ -98,7 +159,7 @@ def main():
         val_accuracy = 100. * correct / len(val_loader.dataset)
         val_accuracies.append(val_accuracy)
 
-        print(f"Epoch: {epoch+1}/{epochs} | Train Loss: {epoch_loss:.6f} | Val Loss: {val_loss:.6f} | Val Acc: {val_accuracy:.2f}%")
+        logger.info(f"Epoch: {epoch+1}/{epochs} | Train Loss: {epoch_loss:.6f} | Val Loss: {val_loss:.6f} | Val Acc: {val_accuracy:.2f}%")
 
         # Learning rate scheduler step
         scheduler.step(val_loss)
@@ -107,16 +168,16 @@ def main():
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             epochs_no_improve = 0
-            torch.save(model.state_dict(), 'best_model.pth')
+            torch.save(model.state_dict(), os.path.join(results_dir, 'best_model.pth'))
         else:
             epochs_no_improve += 1
         
         if epochs_no_improve == patience:
-            print(f"Early stopping triggered after {epoch+1} epochs.")
+            logger.info(f"Early stopping triggered after {epoch+1} epochs.")
             break
 
     # Load the best model for testing
-    model.load_state_dict(torch.load('best_model.pth'))
+    model.load_state_dict(torch.load(os.path.join(results_dir, 'best_model.pth')))
 
     # --- Plotting ---
     plt.figure(figsize=(12, 5))
@@ -138,7 +199,7 @@ def main():
     plt.grid(True)
     
     plt.tight_layout()
-    plt.savefig('training_plots.png')
+    plt.savefig(os.path.join(results_dir, 'training_plots.png'))
 
     # --- Testing ---
     # Complete test
@@ -152,7 +213,7 @@ def main():
             correct += pred.eq(target).sum().item()
 
     acc = 100. * correct / len(test_loader.dataset)
-    print(f"Test Accuracy: {acc:.2f}%")
+    logger.info(f"Test Accuracy: {acc:.2f}%")
 
     # Plot histogram of eigenvalues
     all_eigenvalues = torch.cat([p.data for p in model.lambda_diags]).cpu().numpy()
@@ -162,7 +223,7 @@ def main():
     plt.xlabel('Eigenvalue')
     plt.ylabel('Frequency')
     plt.grid(True)
-    plt.savefig('eigenvalues_histogram.png')
+    plt.savefig(os.path.join(results_dir, 'eigenvalues_histogram.png'))
 
     # Test only for top eigenvalues
     model.reset_weights()  # Ensure weights are rebuilt
@@ -179,9 +240,14 @@ def main():
                 correct += pred.eq(target).sum().item()
         
         acc = 100. * correct / len(test_loader.dataset)
-        print(f"Test Accuracy with top {num} eigenvalues: {acc:.2f}%")
+        logger.info(f"Test Accuracy with top {num} eigenvalues: {acc:.2f}%")
         model.reset_weights()  # Reset weights for next iteration
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description='Train and test SPARCS model on different datasets.')
+    parser.add_argument('--dataset', type=str, default='mnist',
+                        choices=['mnist', 'fashion_mnist', 'mnist_1d'],
+                        help='Dataset to use for training and testing.')
+    args = parser.parse_args()
+    main(args)
