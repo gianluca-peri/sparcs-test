@@ -7,7 +7,7 @@ class SPARCS(nn.Module):
     SPARCS module implementing the spectral parameterization.
     """
 
-    def __init__(self, layers_dim, activation="relu", bias=True):
+    def __init__(self, layers_dim, activation="relu", bias=True, normalization="layernorm"):
         """
         Initialize SPARCS module.
 
@@ -52,6 +52,11 @@ class SPARCS(nn.Module):
         self.bias = bias
         self.number_of_layers = len(self.layers_dim)
         self.W = None
+        self.normalization = normalization
+        if self.normalization == "layernorm":
+            self.layer_norms = nn.ModuleList([
+                nn.LayerNorm(self.layers_dim[i]) for i in range(1, len(self.layers_dim))
+            ])
 
     def reset_weights(self):
         """
@@ -65,9 +70,18 @@ class SPARCS(nn.Module):
         Notice, the last diagonal is not regularized.
         """
         reg = 0.0
+        # Eigenvalues reg (L1)
         for i, lam in enumerate(self.lambda_diags):
             if i != len(self.lambda_diags) - 1:
                 reg += torch.sum(torch.abs(lam))
+
+        # Impose orthonormality on phi blocks
+        for phi in self.phi_blocks:
+            # Impose ortogonality: ||phi phi^T - I||_F
+            reg += torch.norm(phi @ phi.T - torch.eye(phi.size(0), device=phi.device))
+            # Impose normality: norm of columns
+            reg += torch.norm(torch.norm(phi, dim=0) - 1)
+
         return reg * reg_cost
 
     def build_weight_matrices(self):
@@ -104,16 +118,18 @@ class SPARCS(nn.Module):
     def select_just_best_projectors(self, num_best=1):
         """
         Set to zero all eigenvalues except the top `num_best` ones, globally.
+        The best ones are the ones with biggest absolute value.
         """
         all_lambdas = torch.cat([lam.flatten() for lam in self.lambda_diags])
         if num_best >= len(all_lambdas):
             return  # Nothing to do
 
-        topk_values, _ = torch.topk(all_lambdas, num_best)
+        # Select based on absolute value
+        topk_values, _ = torch.topk(torch.abs(all_lambdas), num_best)
         threshold = topk_values[-1].item()
 
         for lam in self.lambda_diags:
-            lam.data = torch.where(lam.data >= threshold, lam.data, torch.zeros_like(lam.data))
+            lam.data = torch.where(torch.abs(lam.data) >= threshold, lam.data, torch.zeros_like(lam.data))
 
     def forward(self, x):
         """
@@ -138,7 +154,11 @@ class SPARCS(nn.Module):
             for j in range(i - 1):
                 a_i += activations[j] @ self.W[i][j].T
 
-            a_i /= i
+            if self.normalization == "layer":
+                a_i /= i
+            elif self.normalization == "layernorm":
+                a_i = self.layer_norms[i-1](a_i)
+            
             a_i = self.non_lin(a_i)
 
             activations.append(a_i)

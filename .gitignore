@@ -9,3 +9,4 @@ data/
 sparcs/__pycache__/
 best_model.pth
 training_plots.png
+eigenvalues_histogram.png

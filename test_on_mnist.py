@@ -139,7 +139,6 @@ def main():
     
     plt.tight_layout()
     plt.savefig('training_plots.png')
-    plt.show()
 
     # --- Testing ---
     # Complete test
@@ -154,6 +153,16 @@ def main():
 
     acc = 100. * correct / len(test_loader.dataset)
     print(f"Test Accuracy: {acc:.2f}%")
+
+    # Plot histogram of eigenvalues
+    all_eigenvalues = torch.cat([p.data for p in model.lambda_diags]).cpu().numpy()
+    plt.figure(figsize=(8, 5))
+    plt.hist(np.abs(all_eigenvalues), bins=50, color='blue', alpha=0.7)
+    plt.title('Histogram of Eigenvalues')
+    plt.xlabel('Eigenvalue')
+    plt.ylabel('Frequency')
+    plt.grid(True)
+    plt.savefig('eigenvalues_histogram.png')
 
     # Test only for top eigenvalues
     model.reset_weights()  # Ensure weights are rebuilt
