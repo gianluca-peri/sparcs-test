@@ -37,7 +37,7 @@ def get_data_loaders(dataset_name, batch_size, validation_split):
     """
     Returns the data loaders for the specified dataset.
     """
-    data_root = "./Data/"
+    data_root = "./data/"
     if dataset_name == 'mnist_1d':
         # Load from Hugging Face
         hf_dataset = load_dataset("christopher/mnist1d")
@@ -97,11 +97,11 @@ def main(args):
 
     # --- Hyperparameters ---
     batch_size = 64
-    epochs = 128
+    epochs = 500
     lr = 1e-3
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     validation_split = 0.1
-    patience = 20
+    patience = 50
     gradient_clipping = 1.0
 
     # --- Data ---
@@ -110,7 +110,7 @@ def main(args):
     # --- Model ---
     hidden_dim = 256
     output_dim = 10
-    model = sparcs_module.SPARCS([input_dim, hidden_dim, hidden_dim, output_dim], activation="relu", bias=True).to(device)
+    model = sparcs_module.SPARCS([input_dim, hidden_dim, hidden_dim, hidden_dim, hidden_dim, output_dim], activation="relu", bias=True, dropout=0.2).to(device)
 
     # --- Loss & Optimizer ---
     criterion = nn.CrossEntropyLoss()
@@ -122,6 +122,7 @@ def main(args):
     val_accuracies = []
     best_val_loss = float('inf')
     epochs_no_improve = 0
+    best_model_state = None
 
     for epoch in range(epochs):
         model.train()
@@ -133,7 +134,7 @@ def main(args):
             output = model(data)
             loss = criterion(output, target)
 
-            loss += model.reg_term(reg_cost=1e-4)
+            loss += model.reg_term(reg_cost=1e-3)
 
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), gradient_clipping)
@@ -168,7 +169,8 @@ def main(args):
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             epochs_no_improve = 0
-            torch.save(model.state_dict(), os.path.join(results_dir, 'best_model.pth'))
+            best_model_state = model.state_dict()
+            torch.save(best_model_state, os.path.join(results_dir, 'best_model.pth'))
         else:
             epochs_no_improve += 1
         
@@ -177,7 +179,10 @@ def main(args):
             break
 
     # Load the best model for testing
-    model.load_state_dict(torch.load(os.path.join(results_dir, 'best_model.pth')))
+    if best_model_state:
+        model.load_state_dict(best_model_state)
+    else:
+        logger.info("No best model state found, using the last model.")
 
     # --- Plotting ---
     plt.figure(figsize=(12, 5))
@@ -226,22 +231,20 @@ def main(args):
     plt.savefig(os.path.join(results_dir, 'eigenvalues_histogram.png'))
 
     # Test only for top eigenvalues
-    model.reset_weights()  # Ensure weights are rebuilt
     top_eigenvalues_numbers = [1000, 500, 200, 100, 50, 20, 10, 5, 1] # Important to have them in decreasing order
     for num in top_eigenvalues_numbers:
-        model.select_just_best_projectors(num_best=num)
-        model.eval()
+        pruned_model = model.select_just_best_projectors(num_best=num)
+        pruned_model.eval()
         correct = 0
         with torch.no_grad():
             for data, target in test_loader:
                 data, target = data.to(device), target.to(device)
-                output = model(data)
+                output = pruned_model(data)
                 pred = output.argmax(dim=1)
                 correct += pred.eq(target).sum().item()
         
         acc = 100. * correct / len(test_loader.dataset)
         logger.info(f"Test Accuracy with top {num} eigenvalues: {acc:.2f}%")
-        model.reset_weights()  # Reset weights for next iteration
 
 
 if __name__ == "__main__":

@@ -8,6 +8,5 @@ Experiments_SPARCS/Experiment-CIFAR100/**/
 data/
 results/
 sparcs/__pycache__/
-best_model.pth
-training_plots.png
-eigenvalues_histogram.png
+__pycache__/
+nohup.out
